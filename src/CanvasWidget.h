@@ -19,9 +19,10 @@ protected:
 private:
     QImage m_screenImage;
     bool m_isActivated;
-    QLine m_hLine;
-    QLine m_vLine;
-    QPen m_pen;
+    QPoint m_centerPoint;
+    QLine m_centerHLine;
+    QLine m_centerVLine;
+    QRect m_rectangle;
 
     void grabScreen();
     void drawMeasurer();

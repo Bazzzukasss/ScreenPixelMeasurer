@@ -85,14 +85,15 @@ void CanvasWidget::calculateMeasurer()
         return resPos;
     };
 
-    auto rPos = measTo(cx, w, cy, 1, Qt::Horizontal);
-    auto lPos = measTo(cx, 0, cy, -1, Qt::Horizontal);
-    auto tPos = measTo(cy, h, cx, 1, Qt::Vertical);
-    auto bPos = measTo(cy, 0, cx, -1, Qt::Vertical);
+    auto rx = measTo(cx, w, cy, 1, Qt::Horizontal);
+    auto lx = measTo(cx, 0, cy, -1, Qt::Horizontal);
+    auto ty = measTo(cy, h, cx, 1, Qt::Vertical);
+    auto by = measTo(cy, 0, cx, -1, Qt::Vertical);
 
-    m_hLine = QLine(lPos, cy, rPos, cy);
-    m_vLine = QLine(cx, tPos, cx, bPos);
-    m_pen.setColor(Qt::magenta);
+    m_centerPoint = QPoint(cx, cy);
+    m_centerHLine = QLine(lx, cy, rx, cy);
+    m_centerVLine = QLine(cx, by, cx, ty);
+    m_rectangle = QRect(QPoint{lx, ty}, QPoint{rx,by});
 }
 
 void CanvasWidget::drawMeasurer()
@@ -100,15 +101,24 @@ void CanvasWidget::drawMeasurer()
     if (!m_screenImage.isNull() && m_isActivated)
     {
         QPainter painter(this);
-        painter.setPen(m_pen);
 
         painter.drawImage(
                     QRect{0, 0, 300, 300},
                     m_screenImage,
                     QRect{0, 0, m_screenImage.width(), m_screenImage.width()});
 
-        painter.drawLine(m_hLine);
-        painter.drawLine(m_vLine);
+        painter.setPen(Qt::magenta);
+        painter.drawRect(m_rectangle);
+
+        painter.setPen(Qt::cyan);
+        painter.drawLine(m_centerHLine);
+        painter.drawLine(m_centerVLine);
+
+        painter.drawText(m_centerPoint.x() + 6, m_centerPoint.y() - 4,
+                         QString("h: %1").arg(m_centerVLine.dy()));
+
+        painter.drawText(m_centerPoint.x() + 6, m_centerPoint.y() - 16,
+                         QString("w: %1").arg(m_centerHLine.dx()));
 
         painter.end();
     }
