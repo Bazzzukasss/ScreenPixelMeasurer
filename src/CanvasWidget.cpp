@@ -65,9 +65,9 @@ void CanvasWidget::calculateMeasurer()
     auto h = m_screenImage.height();
     auto color = m_screenImage.pixel(cx, cy);
 
-    auto measTo = [&](int startPos, int endPos, int coord, int direction, Qt::Orientation orientation){
+    auto measTo = [&](int startPos, int endPos, int coord, int step, Qt::Orientation orientation){
         int resPos = endPos;
-        for (int pos = startPos; pos != endPos; pos += direction)
+        for (int pos = startPos + step; pos != endPos; pos += step)
         {
             auto point = orientation == Qt::Horizontal ? QPoint(pos, coord)
                                                        : QPoint(coord, pos);
@@ -79,7 +79,7 @@ void CanvasWidget::calculateMeasurer()
 
             if (m_screenImage.pixel(point) != color)
             {
-                return pos;
+                return pos - step;
             }
         }
         return resPos;
@@ -87,13 +87,13 @@ void CanvasWidget::calculateMeasurer()
 
     auto rx = measTo(cx, w, cy, 1, Qt::Horizontal);
     auto lx = measTo(cx, 0, cy, -1, Qt::Horizontal);
-    auto ty = measTo(cy, h, cx, 1, Qt::Vertical);
-    auto by = measTo(cy, 0, cx, -1, Qt::Vertical);
+    auto by = measTo(cy, h, cx, 1, Qt::Vertical);
+    auto ty = measTo(cy, 0, cx, -1, Qt::Vertical);
 
     m_centerPoint = QPoint(cx, cy);
     m_centerHLine = QLine(lx, cy, rx, cy);
-    m_centerVLine = QLine(cx, by, cx, ty);
-    m_rectangle = QRect(QPoint{lx, ty}, QPoint{rx,by});
+    m_centerVLine = QLine(cx, ty, cx, by);
+    m_rectangle = QRect(lx - 1, ty - 1, m_centerHLine.dx() + 2, m_centerVLine.dy() + 2);
 }
 
 void CanvasWidget::drawMeasurer()
@@ -115,10 +115,10 @@ void CanvasWidget::drawMeasurer()
         painter.drawLine(m_centerVLine);
 
         painter.drawText(m_centerPoint.x() + 6, m_centerPoint.y() - 4,
-                         QString("h: %1").arg(m_centerVLine.dy()));
+                         QString("h: %1").arg(m_centerVLine.dy() + 1));
 
         painter.drawText(m_centerPoint.x() + 6, m_centerPoint.y() - 16,
-                         QString("w: %1").arg(m_centerHLine.dx()));
+                         QString("w: %1").arg(m_centerHLine.dx() + 1));
 
         painter.end();
     }
