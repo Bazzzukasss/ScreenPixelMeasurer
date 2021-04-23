@@ -8,6 +8,7 @@
 
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent),
+    m_scale(kMinScale),
     m_isActivated(false)
 {
     setFocusPolicy(Qt::StrongFocus);
@@ -19,30 +20,58 @@ MainWindow::MainWindow(QWidget* parent) :
     setAttribute(Qt::WA_TranslucentBackground);
 
     setMouseTracking(true);
+    calculateShifts();
 }
 
-void MainWindow::paintEvent(QPaintEvent*)
+void MainWindow::paintEvent(QPaintEvent* event)
 {
     draw();
+
+    event->accept();
 }
 
-void MainWindow::enterEvent(QEvent*)
+void MainWindow::enterEvent(QEvent* event)
 {
     grabScreen();
     m_isActivated = true;
     update();
+
+    event->accept();
 }
 
-void MainWindow::leaveEvent(QEvent*)
+void MainWindow::leaveEvent(QEvent* event)
 {
     m_isActivated = false;
     update();
+
+    event->accept();
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent* event)
 {
     calculateMeasurer(event->x(), event->y());
     update();
+
+    event->accept();
+}
+
+void MainWindow::wheelEvent(QWheelEvent* event)
+{
+    QPoint numPixels = event->pixelDelta();
+    QPoint numDegrees = event->angleDelta() / 8;
+
+    if (!numPixels.isNull())
+    {
+       changeScale(numPixels);
+    }
+    else if (!numDegrees.isNull())
+    {
+        changeScale(numDegrees);
+    }
+
+    update();
+
+    event->accept();
 }
 
 void MainWindow::grabScreen()
@@ -52,8 +81,10 @@ void MainWindow::grabScreen()
     m_screenImage = screen->grabWindow(descktop->winId()).toImage().copy(geometry());
 }
 
-void MainWindow::calculateMeasurer(int cx, int cy)
+void MainWindow::calculateMeasurer(int x, int y)
 {
+    auto cx = m_scaleShiftX + x / m_scale;
+    auto cy = m_scaleShiftY + y / m_scale;
     auto w = m_screenImage.width();
     auto h = m_screenImage.height();
     auto color = m_screenImage.pixel(cx, cy);
@@ -90,8 +121,9 @@ int MainWindow::measTo(int startPos, int endPos, int coord, int step,
     return resPos;
 }
 
-void MainWindow::drawRuller(QPainter& painter)
+void MainWindow::drawBackground(QPainter& painter)
 {
+    painter.drawImage(rect(), m_screenImage);
     painter.setPen(Qt::white);
     painter.drawRect(QRect{0, 0, rect().width() - 1, rect().height() - 1});
 }
@@ -116,7 +148,7 @@ void MainWindow::drawMeasurer(QPainter& painter)
     auto vertValueY = m_rectangle.center().y() + textH / 4;
     if (vertValueX + vertValueW > rect().right())
     {
-        vertValueX = m_rectangle.right() - vertValueW - textShift;
+        vertValueX = qMin(m_rectangle.right(), rect().right()) - vertValueW - textShift;
     }
 
     auto horValue = QString::number(m_centerHLine.dx() + 1);
@@ -142,11 +174,35 @@ void MainWindow::draw()
     {
         QPainter painter(this);
 
-        //painter.drawImage(rect(), m_screenImage);
+        painter.scale(m_scale, m_scale);
+        painter.translate(-m_scaleShiftX, -m_scaleShiftY);
 
-        drawRuller(painter);
+        drawBackground(painter);
         drawMeasurer(painter);
 
         painter.end();
     }
+}
+
+void MainWindow::changeScale(const QPoint& delta)
+{
+    m_scale += delta.y() > 0 ? 1 : -1;
+
+    if (m_scale > kMaxScale)
+    {
+        m_scale = kMaxScale;
+    }
+
+    if (m_scale < kMinScale)
+    {
+        m_scale = kMinScale;
+    }
+
+    calculateShifts();
+}
+
+void MainWindow::calculateShifts()
+{
+    m_scaleShiftX = (rect().width() - rect().width() / m_scale) / 2;
+    m_scaleShiftY = (rect().height() - rect().height() / m_scale) / 2;
 }
