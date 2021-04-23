@@ -101,15 +101,39 @@ void MainWindow::drawMeasurer(QPainter& painter)
     painter.setPen(Qt::magenta);
     painter.drawRect(m_rectangle);
 
-    painter.setPen(Qt::cyan);
+    painter.setPen(Qt::darkCyan);
     painter.drawLine(m_centerHLine);
     painter.drawLine(m_centerVLine);
 
-    painter.drawText(m_centerPoint.x() + 6, m_centerPoint.y() - 4,
-                     QString("h: %1").arg(m_centerVLine.dy() + 1));
+    painter.setPen(Qt::cyan);
+    QFontMetrics fm(font());
+    auto textH = fm.height();
+    auto textShift{2};
 
-    painter.drawText(m_centerPoint.x() + 6, m_centerPoint.y() - 16,
-                     QString("w: %1").arg(m_centerHLine.dx() + 1));
+    auto vertValue = QString::number(m_centerVLine.dy() + 1);
+    auto vertValueW = fm.horizontalAdvance(vertValue);
+    auto vertValueX = m_rectangle.right() + textShift;
+    auto vertValueY = m_rectangle.center().y() + textH / 4;
+    if (vertValueX + vertValueW > rect().right())
+    {
+        vertValueX = m_rectangle.right() - vertValueW - textShift;
+    }
+
+    auto horValue = QString::number(m_centerHLine.dx() + 1);
+    auto horValueW = fm.horizontalAdvance(horValue);
+    auto horValueX = m_rectangle.center().x() - horValueW / 2;
+    auto horValueY = m_rectangle.top() - textShift;
+    if (horValueY < textH + textShift)
+    {
+        horValueY = m_rectangle.top() + textH;
+    }
+    if (horValueX + horValueW / 2 > rect().right())
+    {
+        horValueX = rect().right() - horValueW - textShift;
+    }
+
+    painter.drawText(horValueX, horValueY, horValue);
+    painter.drawText(vertValueX, vertValueY, vertValue);
 }
 
 void MainWindow::draw()
@@ -118,7 +142,7 @@ void MainWindow::draw()
     {
         QPainter painter(this);
 
-        painter.drawImage(rect(), m_screenImage);
+        //painter.drawImage(rect(), m_screenImage);
 
         drawRuller(painter);
         drawMeasurer(painter);
