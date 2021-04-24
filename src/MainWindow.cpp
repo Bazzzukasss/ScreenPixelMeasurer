@@ -18,9 +18,11 @@ MainWindow::MainWindow(QWidget* parent) :
                    Qt::WindowSystemMenuHint);
     setAttribute(Qt::WA_NoSystemBackground);
     setAttribute(Qt::WA_TranslucentBackground);
-
     setMouseTracking(true);
     calculateShifts();
+#ifdef Q_OS_WIN
+    setWindowOpacity(0.1);
+#endif
 }
 
 void MainWindow::paintEvent(QPaintEvent* event)
@@ -33,6 +35,9 @@ void MainWindow::paintEvent(QPaintEvent* event)
 void MainWindow::enterEvent(QEvent* event)
 {
     grabScreen();
+#ifdef Q_OS_WIN
+    setWindowOpacity(1);
+#endif
     m_isActivated = true;
     update();
 
@@ -41,6 +46,9 @@ void MainWindow::enterEvent(QEvent* event)
 
 void MainWindow::leaveEvent(QEvent* event)
 {
+#ifdef Q_OS_WIN
+    setWindowOpacity(0.1);
+#endif
     m_isActivated = false;
     update();
 
