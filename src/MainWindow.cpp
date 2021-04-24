@@ -82,6 +82,23 @@ void MainWindow::wheelEvent(QWheelEvent* event)
     event->accept();
 }
 
+void MainWindow::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton)
+    {
+        if (m_fixedRectangle == m_currentRectangle)
+        {
+            m_fixedRectangle = {0, 0, 0, 0};
+        }
+        else
+        {
+            m_fixedRectangle = m_currentRectangle;
+        }
+
+        update();
+    }
+}
+
 void MainWindow::grabScreen()
 {
     auto screen = QGuiApplication::primaryScreen();
@@ -104,7 +121,7 @@ void MainWindow::calculateMeasurer(int x, int y)
     m_centerPoint = QPoint(cx, cy);
     m_centerHLine = QLine(lx, cy, rx, cy);
     m_centerVLine = QLine(cx, ty, cx, by);
-    m_rectangle = QRect(lx, ty, m_centerHLine.dx(), m_centerVLine.dy());
+    m_currentRectangle = QRect(lx, ty, m_centerHLine.dx(), m_centerVLine.dy());
 }
 
 int MainWindow::measTo(int startPos, int endPos, int coord, int step,
@@ -138,34 +155,46 @@ void MainWindow::drawBackground(QPainter& painter)
 
 void MainWindow::drawMeasurer(QPainter& painter)
 {
-    painter.setPen(Qt::magenta);
-    painter.drawRect(m_rectangle);
-
     painter.setPen(Qt::darkCyan);
     painter.drawLine(m_centerHLine);
-    painter.drawLine(m_centerVLine);
+    painter.drawLine(m_centerVLine);    
+}
 
-    painter.setPen(Qt::cyan);
+void MainWindow::drawRectangles(QPainter& painter)
+{
+    drawRectangle(painter, m_currentRectangle);
+    if (m_currentRectangle != m_fixedRectangle)
+    {
+        drawRectangle(painter, m_fixedRectangle);
+    }
+}
+
+void MainWindow::drawRectangle(QPainter& painter, const QRect& rectangle)
+{
     QFontMetrics fm(font());
     auto textH = fm.height();
     auto textShift{2};
 
-    auto vertValue = QString::number(m_centerVLine.dy() + 1);
+    painter.setPen(Qt::magenta);
+    painter.drawRect(rectangle);
+
+    painter.setPen(Qt::cyan);
+    auto vertValue = QString::number(rectangle.height() + 1);
     auto vertValueW = fm.horizontalAdvance(vertValue);
-    auto vertValueX = m_rectangle.right() + textShift;
-    auto vertValueY = m_rectangle.center().y() + textH / 4;
+    auto vertValueX = rectangle.right() + textShift;
+    auto vertValueY = rectangle.center().y() + textH / 4;
     if (vertValueX + vertValueW > rect().right())
     {
-        vertValueX = qMin(m_rectangle.right(), rect().right()) - vertValueW - textShift;
+        vertValueX = qMin(rectangle.right(), rect().right()) - vertValueW - textShift;
     }
 
-    auto horValue = QString::number(m_centerHLine.dx() + 1);
+    auto horValue = QString::number(rectangle.width() + 1);
     auto horValueW = fm.horizontalAdvance(horValue);
-    auto horValueX = m_rectangle.center().x() - horValueW / 2;
-    auto horValueY = m_rectangle.top() - textShift;
+    auto horValueX = rectangle.center().x() - horValueW / 2;
+    auto horValueY = rectangle.top() - textShift;
     if (horValueY < textH + textShift)
     {
-        horValueY = m_rectangle.top() + textH;
+        horValueY = rectangle.top() + textH;
     }
     if (horValueX + horValueW / 2 > rect().right())
     {
@@ -187,6 +216,7 @@ void MainWindow::draw()
 
         drawBackground(painter);
         drawMeasurer(painter);
+        drawRectangles(painter);
 
         painter.end();
     }
