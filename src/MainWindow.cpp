@@ -3,13 +3,16 @@
 #include <QApplication>
 #include <QPainter>
 #include <QKeyEvent>
+#include <QShortcut>
 #include "MainWindow.h"
 #include <QDebug>
 
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent),
     m_scale(kMinScale),
-    m_isActivated(false)
+    m_isActivated(false),
+    m_isFixedRectanglePresent(false),
+    m_palette(kDarkPalette)
 {
     setFocusPolicy(Qt::StrongFocus);
     setWindowFlags(Qt::WindowStaysOnTopHint |
@@ -23,6 +26,12 @@ MainWindow::MainWindow(QWidget* parent) :
 #ifdef Q_OS_WIN
     setWindowOpacity(0.1);
 #endif
+
+    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_P), this, [&](){
+        m_palette = (m_palette.border == kDarkPalette.border) ? kLightPalette
+                                                              : kDarkPalette;
+        update();
+    });
 }
 
 void MainWindow::paintEvent(QPaintEvent* event)
@@ -57,7 +66,8 @@ void MainWindow::leaveEvent(QEvent* event)
 
 void MainWindow::mouseMoveEvent(QMouseEvent* event)
 {
-    calculateMeasurer(event->x(), event->y());
+    calculateCursorRectangle(event->x(), event->y());
+    calculateMeasureRectangle();
     update();
 
     event->accept();
@@ -86,13 +96,14 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
-        if (m_fixedRectangle == m_currentRectangle)
+        if (m_fixedRectangle == m_cursorRectangle)
         {
-            m_fixedRectangle = {0, 0, 0, 0};
+            m_isFixedRectanglePresent = false;
         }
         else
         {
-            m_fixedRectangle = m_currentRectangle;
+            m_fixedRectangle = m_cursorRectangle;
+            m_isFixedRectanglePresent = true;
         }
 
         update();
@@ -106,25 +117,101 @@ void MainWindow::grabScreen()
     m_screenImage = screen->grabWindow(descktop->winId()).toImage().copy(geometry());
 }
 
-void MainWindow::calculateMeasurer(int x, int y)
+void MainWindow::calculateCursorRectangle(int x, int y)
 {
     auto cx = m_scaleShiftX + x / m_scale;
     auto cy = m_scaleShiftY + y / m_scale;
     auto w = m_screenImage.width();
     auto h = m_screenImage.height();
     auto color = m_screenImage.pixel(cx, cy);
-    auto rx = measTo(cx, w - 1, cy, 1, Qt::Horizontal, color);
-    auto lx = measTo(cx, 0, cy, -1, Qt::Horizontal, color);
-    auto by = measTo(cy, h - 1, cx, 1, Qt::Vertical, color);
-    auto ty = measTo(cy, 0, cx, -1, Qt::Vertical, color);
+    auto rx = beamTo(cx, w - 1, cy, 1, Qt::Horizontal, color);
+    auto lx = beamTo(cx, 0, cy, -1, Qt::Horizontal, color);
+    auto by = beamTo(cy, h - 1, cx, 1, Qt::Vertical, color);
+    auto ty = beamTo(cy, 0, cx, -1, Qt::Vertical, color);
 
-    m_centerPoint = QPoint(cx, cy);
-    m_centerHLine = QLine(lx, cy, rx, cy);
-    m_centerVLine = QLine(cx, ty, cx, by);
-    m_currentRectangle = QRect(lx, ty, m_centerHLine.dx(), m_centerVLine.dy());
+    m_cursorPoint = QPoint(cx, cy);
+    m_cursorHLine = QLine(lx, cy, rx, cy);
+    m_cursorVLine = QLine(cx, ty, cx, by);
+    m_cursorRectangle = QRect(lx, ty, m_cursorHLine.dx(), m_cursorVLine.dy());
 }
 
-int MainWindow::measTo(int startPos, int endPos, int coord, int step,
+void MainWindow::calculateMeasureRectangle()
+{
+    m_measureVLine = {0, 0, 0, 0};
+    m_measureHLine = {0, 0, 0, 0};
+
+    if (m_isFixedRectanglePresent && (m_cursorRectangle != m_fixedRectangle))
+    {
+        auto fcx = m_fixedRectangle.center().x();
+        auto fcy = m_fixedRectangle.center().y();
+        auto fr = m_fixedRectangle.right();
+        auto fl = m_fixedRectangle.left();
+        auto ft = m_fixedRectangle.top();
+        auto fb = m_fixedRectangle.bottom();
+
+        auto ccx = m_cursorRectangle.center().x();
+        auto ccy = m_cursorRectangle.center().y();
+        auto cr = m_cursorRectangle.right();
+        auto cl = m_cursorRectangle.left();
+        auto ct = m_cursorRectangle.top();
+        auto cb = m_cursorRectangle.bottom();
+
+        if (m_cursorRectangle.contains(m_fixedRectangle))
+        {
+            m_measureVLine = {fcx, ft - 1, fcx, ct};
+            m_measureHLine = {fl - 1, fcy, cl, fcy};
+        }
+        else if (m_fixedRectangle.contains(m_cursorRectangle))
+        {
+            m_measureVLine = {ccx, ct - 1, ccx, ft};
+            m_measureHLine = {cl - 1, ccy, fl, ccy};
+        }
+        else
+        {
+            if (m_cursorRectangle.bottom() < m_fixedRectangle.top())
+            {
+                m_measureVLine = {ccx, cb + 2, ccx, ft - 1};
+            }
+            else if (m_cursorRectangle.top() > m_fixedRectangle.bottom())
+            {
+                m_measureVLine = {ccx, ct - 1, ccx, fb + 2};
+            }
+            else
+            {
+                if (m_cursorRectangle.top() < m_fixedRectangle.top())
+                {
+                    m_measureVLine = {ccx, ct, ccx, ft - 1};
+                }
+                else
+                {
+                    m_measureVLine = {ccx, ct - 1, ccx, ft};
+                }
+            }
+
+            if (m_cursorRectangle.right() < m_fixedRectangle.left())
+            {
+                m_measureHLine = {cr + 2, ccy, fl - 1, ccy};
+            }
+            else if (m_cursorRectangle.left() > m_fixedRectangle.right())
+            {
+                m_measureHLine = {cl - 1, ccy, fr + 2, ccy};
+            }
+            else
+            {
+                if (m_cursorRectangle.left() < m_fixedRectangle.left())
+                {
+                    m_measureHLine = {cl, ccy, fl - 1, ccy};
+                }
+                else
+                {
+                    m_measureHLine = {cl - 1, ccy, fl, ccy};
+                }
+            }
+        }
+    }
+}
+
+int MainWindow::beamTo(int startPos, int endPos, int coord, int step,
                        Qt::Orientation orientation, const QRgb& color)
 {
     int resPos = endPos;
@@ -149,36 +236,88 @@ int MainWindow::measTo(int startPos, int endPos, int coord, int step,
 void MainWindow::drawBackground(QPainter& painter)
 {
     painter.drawImage(rect(), m_screenImage);
-    painter.setPen(Qt::white);
+    painter.setPen(m_palette.border);
     painter.drawRect(QRect{0, 0, rect().width() - 1, rect().height() - 1});
 }
 
 void MainWindow::drawMeasurer(QPainter& painter)
 {
-    painter.setPen(Qt::darkCyan);
-    painter.drawLine(m_centerHLine);
-    painter.drawLine(m_centerVLine);    
+    if (m_isFixedRectanglePresent && (m_cursorRectangle != m_fixedRectangle))
+    {
+        painter.setPen(m_palette.measurerLines);
+        painter.drawLine(m_measureHLine);
+        painter.drawLine(m_measureVLine);
+    }
+}
+
+void MainWindow::drawCursor(QPainter& painter)
+{
+    painter.setPen(m_palette.cursorLines);
+    painter.drawLine(m_cursorHLine);
+    painter.drawLine(m_cursorVLine);    
 }
 
 void MainWindow::drawRectangles(QPainter& painter)
 {
-    drawRectangle(painter, m_currentRectangle);
-    if (m_currentRectangle != m_fixedRectangle)
+    painter.setPen(m_palette.cursorRectangle);
+    painter.drawRect(m_cursorRectangle);
+    if (m_isFixedRectanglePresent && (m_cursorRectangle != m_fixedRectangle))
     {
-        drawRectangle(painter, m_fixedRectangle);
+        painter.setPen(m_palette.fixedRectangle);
+        painter.drawRect(m_fixedRectangle);
     }
 }
 
-void MainWindow::drawRectangle(QPainter& painter, const QRect& rectangle)
+void MainWindow::drawValues(QPainter& painter)
+{
+    drawValue(painter, m_measureHLine, 1, m_palette.measurerLines);
+    drawValue(painter, m_measureVLine, 1, m_palette.measurerLines);
+
+    drawValue(painter, {m_cursorRectangle.bottomRight(), m_cursorRectangle.topRight()}, 2, m_palette.cursorRectangle);
+    drawValue(painter, {m_cursorRectangle.topLeft(), m_cursorRectangle.topRight()}, 2, m_palette.cursorRectangle);
+
+    drawValue(painter, {m_fixedRectangle.bottomRight(), m_fixedRectangle.topRight()}, 2, m_palette.fixedRectangle);
+    drawValue(painter, {m_fixedRectangle.topLeft(), m_fixedRectangle.topRight()}, 2, m_palette.fixedRectangle);
+}
+
+void MainWindow::drawValue(QPainter& painter, const QLine& line, int deltaValue, const QColor& color)
 {
     QFontMetrics fm(font());
+    QString text;
     auto textH = fm.height();
     auto textShift{2};
+    int x{0}, y{0}, textW;
 
-    painter.setPen(Qt::magenta);
-    painter.drawRect(rectangle);
+    if (line.x1() == line.x2())
+    {
+        text = QString::number(abs(line.dy()) + deltaValue);
+        textW = fm.horizontalAdvance(text);
+        x = line.x1() + textShift;
+        y = line.center().y() + textH / 4;
+        if (x + textW > rect().right())
+        {
+            x = qMin(line.x1(), rect().right()) - textW - textShift;
+        }
+    } else if (line.y1() == line.y2())
+    {
+        text = QString::number(abs(line.dx()) + deltaValue);
+        textW = fm.horizontalAdvance(text);
+        x = line.center().x() - textW / 2;
+        y = line.y1() - textShift;
+        if (y < textH + textShift)
+        {
+            y = line.y1() + textH;
+        }
+        if (x + textW / 2 > rect().right())
+        {
+            x = rect().right() - textW - textShift;
+        }
+    }
 
-    painter.setPen(Qt::cyan);
+    painter.setPen(color);
+    painter.drawText(x, y, text);
+
+    /*
     auto vertValue = QString::number(rectangle.height() + 1);
     auto vertValueW = fm.horizontalAdvance(vertValue);
     auto vertValueX = rectangle.right() + textShift;
@@ -203,6 +342,7 @@ void MainWindow::drawRectangle(QPainter& painter, const QRect& rectangle)
 
     painter.drawText(horValueX, horValueY, horValue);
     painter.drawText(vertValueX, vertValueY, vertValue);
+    */
 }
 
 void MainWindow::draw()
@@ -215,8 +355,10 @@ void MainWindow::draw()
         painter.translate(-m_scaleShiftX, -m_scaleShiftY);
 
         drawBackground(painter);
-        drawMeasurer(painter);
+        drawCursor(painter);
         drawRectangles(painter);
+        drawMeasurer(painter);
+        drawValues(painter);
 
         painter.end();
     }
