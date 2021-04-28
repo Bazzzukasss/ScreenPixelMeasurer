@@ -103,6 +103,8 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
         else
         {
             m_fixedRectangle = m_cursorRectangle;
+            m_fixedHValue = m_cursorHValue;
+            m_fixedVValue = m_cursorVValue;
             m_isFixedRectanglePresent = true;
         }
 
@@ -133,12 +135,16 @@ void MainWindow::calculateCursorRectangle(int x, int y)
     m_cursorHLine = QLine(lx, cy, rx, cy);
     m_cursorVLine = QLine(cx, ty, cx, by);
     m_cursorRectangle = QRect(lx, ty, m_cursorHLine.dx(), m_cursorVLine.dy());
+    m_cursorHValue = m_cursorRectangle.width() + 1;
+    m_cursorVValue = m_cursorRectangle.height() + 1;
 }
 
 void MainWindow::calculateMeasureRectangle()
 {
     m_measureVLine = {0, 0, 0, 0};
     m_measureHLine = {0, 0, 0, 0};
+    m_measureHValue = 0;
+    m_measureVValue = 0;
 
     if (m_isFixedRectanglePresent && (m_cursorRectangle != m_fixedRectangle))
     {
@@ -158,23 +164,29 @@ void MainWindow::calculateMeasureRectangle()
 
         if (m_cursorRectangle.contains(m_fixedRectangle))
         {
-            m_measureVLine = {fcx, ft - 1, fcx, ct};
             m_measureHLine = {fl - 1, fcy, cl, fcy};
+            m_measureVLine = {fcx, ft - 1, fcx, ct};
+            m_measureHValue = abs(fl - cl);
+            m_measureVValue = abs(ft - ct);
         }
         else if (m_fixedRectangle.contains(m_cursorRectangle))
         {
-            m_measureVLine = {ccx, ct - 1, ccx, ft};
             m_measureHLine = {cl - 1, ccy, fl, ccy};
+            m_measureVLine = {ccx, ct - 1, ccx, ft};
+            m_measureHValue = abs(fl - cl);
+            m_measureVValue = abs(ft - ct);
         }
         else
         {
             if (m_cursorRectangle.bottom() < m_fixedRectangle.top())
             {
                 m_measureVLine = {ccx, cb + 2, ccx, ft - 1};
+                m_measureVValue = abs(ft - cb);
             }
             else if (m_cursorRectangle.top() > m_fixedRectangle.bottom())
             {
                 m_measureVLine = {ccx, ct - 1, ccx, fb + 2};
+                m_measureVValue = abs(fb - ct);
             }
             else
             {
@@ -185,16 +197,20 @@ void MainWindow::calculateMeasureRectangle()
                 else if (m_cursorRectangle.top() > m_fixedRectangle.top())
                 {
                     m_measureVLine = {ccx, ct - 1, ccx, ft};
+
                 }
+                m_measureVValue = abs(ft - ct);
             }
 
             if (m_cursorRectangle.right() < m_fixedRectangle.left())
             {
                 m_measureHLine = {cr + 2, ccy, fl - 1, ccy};
+                m_measureHValue = abs(cr - fl);
             }
             else if (m_cursorRectangle.left() > m_fixedRectangle.right())
             {
                 m_measureHLine = {cl - 1, ccy, fr + 2, ccy};
+                m_measureHValue = abs(cl - fr);
             }
             else
             {
@@ -206,7 +222,10 @@ void MainWindow::calculateMeasureRectangle()
                 {
                     m_measureHLine = {cl - 1, ccy, fl, ccy};
                 }
+                m_measureHValue = abs(cl - fl);
             }
+            m_measureHValue -= 2;
+            m_measureVValue -= 2;
         }
     }
 }
@@ -245,8 +264,14 @@ void MainWindow::drawMeasurer(QPainter& painter)
     if (m_isFixedRectanglePresent && (m_cursorRectangle != m_fixedRectangle))
     {
         painter.setPen(m_palette.measurerLines);
-        painter.drawLine(m_measureHLine);
-        painter.drawLine(m_measureVLine);
+        if (m_measureHValue)
+        {
+            drawMeasurerLine(painter, m_measureHLine);
+        }
+        if (m_measureVValue)
+        {
+            drawMeasurerLine(painter, m_measureVLine);
+        }
     }
 }
 
@@ -268,54 +293,66 @@ void MainWindow::drawRectangles(QPainter& painter)
     }
 }
 
-void MainWindow::drawValues(QPainter& painter)
+void MainWindow::drawMeasurerLine(QPainter& painter, const QLine& line)
 {
-    drawValue(painter, m_measureHLine, 1, m_palette.measurerLines);
-    drawValue(painter, m_measureVLine, 1, m_palette.measurerLines);
-
-    drawValue(painter, {m_cursorRectangle.bottomRight(), m_cursorRectangle.topRight()}, 2, m_palette.cursorRectangle);
-    drawValue(painter, {m_cursorRectangle.topLeft(), m_cursorRectangle.topRight()}, 2, m_palette.cursorRectangle);
-
-    drawValue(painter, {m_fixedRectangle.bottomRight(), m_fixedRectangle.topRight()}, 2, m_palette.fixedRectangle);
-    drawValue(painter, {m_fixedRectangle.topLeft(), m_fixedRectangle.topRight()}, 2, m_palette.fixedRectangle);
+    auto vTick = line.dx() ? 2 : 0;
+    auto hTick = line.dy() ? 2 : 0;
+    painter.drawLine(line);
+    painter.drawLine(line.x1() - hTick, line.y1() - vTick,
+                     line.x1() + hTick, line.y1() + vTick);
+    painter.drawLine(line.x2() - hTick, line.y2() - vTick,
+                     line.x2() + hTick, line.y2() + vTick);
 }
 
-void MainWindow::drawValue(QPainter& painter, const QLine& line, int deltaValue, const QColor& color)
+void MainWindow::drawValues(QPainter& painter)
+{
+    drawValue(painter, m_measureHLine, m_measureHValue, m_palette.measurerLines);
+    drawValue(painter, m_measureVLine, m_measureVValue, m_palette.measurerLines);
+
+    drawValue(painter, {m_cursorRectangle.bottomRight(), m_cursorRectangle.topRight()}, m_cursorVValue, m_palette.cursorRectangle);
+    drawValue(painter, {m_cursorRectangle.topLeft(), m_cursorRectangle.topRight()}, m_cursorHValue, m_palette.cursorRectangle);
+
+    drawValue(painter, {m_fixedRectangle.bottomRight(), m_fixedRectangle.topRight()}, m_fixedVValue, m_palette.fixedRectangle);
+    drawValue(painter, {m_fixedRectangle.topLeft(), m_fixedRectangle.topRight()}, m_fixedHValue, m_palette.fixedRectangle);
+}
+
+void MainWindow::drawValue(QPainter& painter, const QLine& line, int value, const QColor& color)
 {
     QFontMetrics fm(font());
-    QString text;
+    auto text = QString::number(value);
     auto textH = fm.height();
     auto textShift{2};
     int x{0}, y{0}, textW;
 
-    if (line.x1() == line.x2())
+    if (value != 0)
     {
-        text = line.dy() > 0 ? QString::number(abs(line.dy()) + deltaValue) : "0";
-        textW = fm.horizontalAdvance(text);
-        x = line.x1() + textShift;
-        y = line.center().y() + textH / 4;
-        if (x + textW > rect().right())
+        if (line.x1() == line.x2())
         {
-            x = qMin(line.x1(), rect().right()) - textW - textShift;
-        }
-    } else if (line.y1() == line.y2())
-    {
-        text = line.dx() > 0 ? QString::number(abs(line.dx()) + deltaValue) : "0";
-        textW = fm.horizontalAdvance(text);
-        x = line.center().x() - textW / 2;
-        y = line.y1() - textShift;
-        if (y < textH + textShift)
+            textW = fm.horizontalAdvance(text);
+            x = line.x1() + textShift;
+            y = line.center().y() + textH / 4;
+            if (x + textW > rect().right())
+            {
+                x = qMin(line.x1(), rect().right()) - textW - textShift;
+            }
+        } else if (line.y1() == line.y2())
         {
-            y = line.y1() + textH;
+            textW = fm.horizontalAdvance(text);
+            x = line.center().x() - textW / 2;
+            y = line.y1() - textShift;
+            if (y < textH + textShift)
+            {
+                y = line.y1() + textH;
+            }
+            if (x + textW / 2 > rect().right())
+            {
+                x = rect().right() - textW - textShift;
+            }
         }
-        if (x + textW / 2 > rect().right())
-        {
-            x = rect().right() - textW - textShift;
-        }
-    }
 
-    painter.setPen(color);
-    painter.drawText(x, y, text);
+        painter.setPen(color);
+        painter.drawText(x, y, text);
+    }
 }
 
 void MainWindow::draw()

@@ -62,6 +62,12 @@ private:
     int m_scale;
     int m_scaleShiftX;
     int m_scaleShiftY;
+    int m_measureHValue;
+    int m_measureVValue;
+    int m_fixedHValue;
+    int m_fixedVValue;
+    int m_cursorHValue;
+    int m_cursorVValue;
     bool m_isActivated;
     bool m_isFixedRectanglePresent;
     Palette m_palette;
@@ -76,7 +82,8 @@ private:
     void drawMeasurer(QPainter& painter);
     void drawCursor(QPainter& painter);
     void drawRectangles(QPainter& painter);
-    void drawValue(QPainter& painter, const QLine& line, int deltaValue, const QColor& color);
+    void drawMeasurerLine(QPainter& painter, const QLine& line);
+    void drawValue(QPainter& painter, const QLine& line, int value, const QColor& color);
     void drawValues(QPainter& painter);
     int beamTo(int startPos, int endPos, int coord, int step,
                Qt::Orientation orientation, const QRgb& color);
