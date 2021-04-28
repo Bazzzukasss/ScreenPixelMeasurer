@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QKeyEvent>
 #include <QShortcut>
+#include <QtMath>
 #include "MainWindow.h"
 #include <QDebug>
 
@@ -23,6 +24,8 @@ MainWindow::MainWindow(QWidget* parent) :
     setAttribute(Qt::WA_TranslucentBackground);
     setMouseTracking(true);
     calculateShifts();
+    m_pen.setJoinStyle(Qt::MiterJoin);
+    m_pen.setWidth(1);
 #ifdef Q_OS_WIN
     setWindowOpacity(0.1);
 #endif
@@ -58,6 +61,7 @@ void MainWindow::leaveEvent(QEvent* event)
 #ifdef Q_OS_WIN
     setWindowOpacity(0.1);
 #endif
+    m_isFixedRectanglePresent = false;
     m_isActivated = false;
     update();
 
@@ -254,8 +258,9 @@ int MainWindow::beamTo(int startPos, int endPos, int coord, int step,
 
 void MainWindow::drawBackground(QPainter& painter)
 {
+    m_pen.setColor(m_palette.border);
+    painter.setPen(m_pen);
     painter.drawImage(rect(), m_screenImage);
-    painter.setPen(m_palette.border);
     painter.drawRect(QRect{0, 0, rect().width() - 1, rect().height() - 1});
 }
 
@@ -263,7 +268,8 @@ void MainWindow::drawMeasurer(QPainter& painter)
 {
     if (m_isFixedRectanglePresent && (m_cursorRectangle != m_fixedRectangle))
     {
-        painter.setPen(m_palette.measurerLines);
+        m_pen.setColor(m_palette.measurerLines);
+        painter.setPen(m_pen);
         if (m_measureHValue)
         {
             drawMeasurerLine(painter, m_measureHLine);
@@ -277,23 +283,26 @@ void MainWindow::drawMeasurer(QPainter& painter)
 
 void MainWindow::drawCursor(QPainter& painter)
 {
-    painter.setPen(m_palette.cursorLines);
+    m_pen.setColor(m_palette.cursorLines);
+    painter.setPen(m_pen);
     painter.drawLine(m_cursorHLine);
     painter.drawLine(m_cursorVLine);    
 }
 
 void MainWindow::drawRectangles(QPainter& painter)
 {
-    painter.setPen(m_palette.cursorRectangle);
+    m_pen.setColor(m_palette.cursorRectangle);
+    painter.setPen(m_pen);
     painter.drawRect(m_cursorRectangle);
     if (m_isFixedRectanglePresent && (m_cursorRectangle != m_fixedRectangle))
     {
-        painter.setPen(m_palette.fixedRectangle);
+        m_pen.setColor(m_palette.fixedRectangle);
+        painter.setPen(m_pen);
         painter.drawRect(m_fixedRectangle);
     }
 }
 
-void MainWindow::drawMeasurerLine(QPainter& painter, const QLine& line)
+void MainWindow::drawMeasurerLine(QPainter& painter, const QLine &line)
 {
     auto vTick = line.dx() ? 2 : 0;
     auto hTick = line.dy() ? 2 : 0;
@@ -312,8 +321,11 @@ void MainWindow::drawValues(QPainter& painter)
     drawValue(painter, {m_cursorRectangle.bottomRight(), m_cursorRectangle.topRight()}, m_cursorVValue, m_palette.cursorRectangle);
     drawValue(painter, {m_cursorRectangle.topLeft(), m_cursorRectangle.topRight()}, m_cursorHValue, m_palette.cursorRectangle);
 
-    drawValue(painter, {m_fixedRectangle.bottomRight(), m_fixedRectangle.topRight()}, m_fixedVValue, m_palette.fixedRectangle);
-    drawValue(painter, {m_fixedRectangle.topLeft(), m_fixedRectangle.topRight()}, m_fixedHValue, m_palette.fixedRectangle);
+    if (m_isFixedRectanglePresent)
+    {
+        drawValue(painter, {m_fixedRectangle.bottomRight(), m_fixedRectangle.topRight()}, m_fixedVValue, m_palette.fixedRectangle);
+        drawValue(painter, {m_fixedRectangle.topLeft(), m_fixedRectangle.topRight()}, m_fixedHValue, m_palette.fixedRectangle);
+    }
 }
 
 void MainWindow::drawValue(QPainter& painter, const QLine& line, int value, const QColor& color)
@@ -335,7 +347,8 @@ void MainWindow::drawValue(QPainter& painter, const QLine& line, int value, cons
             {
                 x = qMin(line.x1(), rect().right()) - textW - textShift;
             }
-        } else if (line.y1() == line.y2())
+        }
+        else if (line.y1() == line.y2())
         {
             textW = fm.horizontalAdvance(text);
             x = line.center().x() - textW / 2;
@@ -350,7 +363,8 @@ void MainWindow::drawValue(QPainter& painter, const QLine& line, int value, cons
             }
         }
 
-        painter.setPen(color);
+        m_pen.setColor(color);
+        painter.setPen(m_pen);
         painter.drawText(x, y, text);
     }
 }
@@ -360,6 +374,8 @@ void MainWindow::draw()
     if (m_isActivated)
     {
         QPainter painter(this);
+
+        painter.setRenderHint(QPainter::Antialiasing, false);
 
         painter.scale(m_scale, m_scale);
         painter.translate(-m_scaleShiftX, -m_scaleShiftY);

@@ -58,7 +58,8 @@ private:
     QLine m_measureHLine;
     QLine m_measureVLine;
     QRect m_cursorRectangle;
-    QRect m_fixedRectangle;    
+    QRect m_fixedRectangle;
+    QPen m_pen;
     int m_scale;
     int m_scaleShiftX;
     int m_scaleShiftY;
