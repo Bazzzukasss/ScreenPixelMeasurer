@@ -182,7 +182,7 @@ void MainWindow::calculateMeasureRectangle()
                 {
                     m_measureVLine = {ccx, ct, ccx, ft - 1};
                 }
-                else
+                else if (m_cursorRectangle.top() > m_fixedRectangle.top())
                 {
                     m_measureVLine = {ccx, ct - 1, ccx, ft};
                 }
@@ -202,7 +202,7 @@ void MainWindow::calculateMeasureRectangle()
                 {
                     m_measureHLine = {cl, ccy, fl - 1, ccy};
                 }
-                else
+                else if (m_cursorRectangle.left() > m_fixedRectangle.left())
                 {
                     m_measureHLine = {cl - 1, ccy, fl, ccy};
                 }
@@ -290,7 +290,7 @@ void MainWindow::drawValue(QPainter& painter, const QLine& line, int deltaValue,
 
     if (line.x1() == line.x2())
     {
-        text = QString::number(abs(line.dy()) + deltaValue);
+        text = line.dy() > 0 ? QString::number(abs(line.dy()) + deltaValue) : "0";
         textW = fm.horizontalAdvance(text);
         x = line.x1() + textShift;
         y = line.center().y() + textH / 4;
@@ -300,7 +300,7 @@ void MainWindow::drawValue(QPainter& painter, const QLine& line, int deltaValue,
         }
     } else if (line.y1() == line.y2())
     {
-        text = QString::number(abs(line.dx()) + deltaValue);
+        text = line.dx() > 0 ? QString::number(abs(line.dx()) + deltaValue) : "0";
         textW = fm.horizontalAdvance(text);
         x = line.center().x() - textW / 2;
         y = line.y1() - textShift;
@@ -316,33 +316,6 @@ void MainWindow::drawValue(QPainter& painter, const QLine& line, int deltaValue,
 
     painter.setPen(color);
     painter.drawText(x, y, text);
-
-    /*
-    auto vertValue = QString::number(rectangle.height() + 1);
-    auto vertValueW = fm.horizontalAdvance(vertValue);
-    auto vertValueX = rectangle.right() + textShift;
-    auto vertValueY = rectangle.center().y() + textH / 4;
-    if (vertValueX + vertValueW > rect().right())
-    {
-        vertValueX = qMin(rectangle.right(), rect().right()) - vertValueW - textShift;
-    }
-
-    auto horValue = QString::number(rectangle.width() + 1);
-    auto horValueW = fm.horizontalAdvance(horValue);
-    auto horValueX = rectangle.center().x() - horValueW / 2;
-    auto horValueY = rectangle.top() - textShift;
-    if (horValueY < textH + textShift)
-    {
-        horValueY = rectangle.top() + textH;
-    }
-    if (horValueX + horValueW / 2 > rect().right())
-    {
-        horValueX = rect().right() - horValueW - textShift;
-    }
-
-    painter.drawText(horValueX, horValueY, horValue);
-    painter.drawText(vertValueX, vertValueY, vertValue);
-    */
 }
 
 void MainWindow::draw()
