@@ -53,12 +53,14 @@ protected:
 private:
     QImage m_screenImage;
     QPoint m_cursorPoint;
+    QPoint m_windowPos;
     QLine m_cursorHLine;
     QLine m_cursorVLine;
     QLine m_measureHLine;
     QLine m_measureVLine;
     QRect m_cursorRectangle;
-    QRect m_fixedRectangle;
+    QRect m_referenceRectangle;
+    QPoint m_referencePoint;
     QPen m_pen;
     int m_scale;
     int m_scaleShiftX;
@@ -70,14 +72,19 @@ private:
     int m_cursorHValue;
     int m_cursorVValue;
     bool m_isActivated;
-    bool m_isFixedRectanglePresent;
+    bool m_isReferenceRectanglePresent;
+    bool m_isReferencePointPresent;
     Palette m_palette;
 
     void grabScreen();
+    void setReferenceRectangle();
+    void clearReferenceRectangle();
+    void setReferencePoint(int x, int y);
+    void clearReferencePoint();
     void changeScale(const QPoint& delta);
     void calculateShifts();
     void calculateCursorRectangle(int x, int y);
-    void calculateMeasureRectangle();
+    void calculateMeasurer();
     void draw();
     void drawBackground(QPainter& painter);
     void drawMeasurer(QPainter& painter);
@@ -86,6 +93,7 @@ private:
     void drawMeasurerLine(QPainter& painter, const QLine& line);
     void drawValue(QPainter& painter, const QLine& line, int value, const QColor& color);
     void drawValues(QPainter& painter);
+    void drawReferencePoint(QPainter& painter);
     QRectF toFloat(const QRect& rectangle);
     QLineF toFloat(const QLine& line);
     int beamTo(int startPos, int endPos, int coord, int step,
