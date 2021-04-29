@@ -261,7 +261,7 @@ void MainWindow::drawBackground(QPainter& painter)
     m_pen.setColor(m_palette.border);
     painter.setPen(m_pen);
     painter.drawImage(rect(), m_screenImage);
-    painter.drawRect(QRect{0, 0, rect().width() - 1, rect().height() - 1});
+    painter.drawRect(toFloat(QRect{0, 0, rect().width() - 1, rect().height() - 1}));
 }
 
 void MainWindow::drawMeasurer(QPainter& painter)
@@ -285,20 +285,20 @@ void MainWindow::drawCursor(QPainter& painter)
 {
     m_pen.setColor(m_palette.cursorLines);
     painter.setPen(m_pen);
-    painter.drawLine(m_cursorHLine);
-    painter.drawLine(m_cursorVLine);    
+    painter.drawLine(toFloat(m_cursorHLine));
+    painter.drawLine(toFloat(m_cursorVLine));
 }
 
 void MainWindow::drawRectangles(QPainter& painter)
 {
     m_pen.setColor(m_palette.cursorRectangle);
     painter.setPen(m_pen);
-    painter.drawRect(m_cursorRectangle);
+    painter.drawRect(toFloat(m_cursorRectangle));
     if (m_isFixedRectanglePresent && (m_cursorRectangle != m_fixedRectangle))
     {
         m_pen.setColor(m_palette.fixedRectangle);
         painter.setPen(m_pen);
-        painter.drawRect(m_fixedRectangle);
+        painter.drawRect(toFloat(m_fixedRectangle));
     }
 }
 
@@ -306,11 +306,11 @@ void MainWindow::drawMeasurerLine(QPainter& painter, const QLine &line)
 {
     auto vTick = line.dx() ? 2 : 0;
     auto hTick = line.dy() ? 2 : 0;
-    painter.drawLine(line);
-    painter.drawLine(line.x1() - hTick, line.y1() - vTick,
-                     line.x1() + hTick, line.y1() + vTick);
-    painter.drawLine(line.x2() - hTick, line.y2() - vTick,
-                     line.x2() + hTick, line.y2() + vTick);
+    painter.drawLine(toFloat(line));
+    painter.drawLine(toFloat(QLine{line.x1() - hTick, line.y1() - vTick,
+                                   line.x1() + hTick, line.y1() + vTick}));
+    painter.drawLine(toFloat(QLine{line.x2() - hTick, line.y2() - vTick,
+                                   line.x2() + hTick, line.y2() + vTick}));
 }
 
 void MainWindow::drawValues(QPainter& painter)
@@ -326,6 +326,24 @@ void MainWindow::drawValues(QPainter& painter)
         drawValue(painter, {m_fixedRectangle.bottomRight(), m_fixedRectangle.topRight()}, m_fixedVValue, m_palette.fixedRectangle);
         drawValue(painter, {m_fixedRectangle.topLeft(), m_fixedRectangle.topRight()}, m_fixedHValue, m_palette.fixedRectangle);
     }
+}
+
+QRectF MainWindow::toFloat(const QRect& rectangle)
+{
+    float x = rectangle.x();
+    float y = rectangle.y();
+    float w = rectangle.width();
+    float h = rectangle.height();
+    return QRectF{x+ 0.5, y + 0.5, w , h};
+}
+
+QLineF MainWindow::toFloat(const QLine& line)
+{
+    float x1 = line.x1();
+    float y1 = line.y1();
+    float x2 = line.x2();
+    float y2 = line.y2();
+    return QLineF{x1 + 0.5, y1 + 0.5, x2 + 0.5, y2 + 0.5};
 }
 
 void MainWindow::drawValue(QPainter& painter, const QLine& line, int value, const QColor& color)

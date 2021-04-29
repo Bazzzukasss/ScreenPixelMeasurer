@@ -86,6 +86,8 @@ private:
     void drawMeasurerLine(QPainter& painter, const QLine& line);
     void drawValue(QPainter& painter, const QLine& line, int value, const QColor& color);
     void drawValues(QPainter& painter);
+    QRectF toFloat(const QRect& rectangle);
+    QLineF toFloat(const QLine& line);
     int beamTo(int startPos, int endPos, int coord, int step,
                Qt::Orientation orientation, const QRgb& color);
 };
