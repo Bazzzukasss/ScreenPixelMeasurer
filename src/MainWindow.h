@@ -85,6 +85,8 @@ private:
     void calculateShifts();
     void calculateCursorRectangle(int x, int y);
     void calculateMeasurer();
+    int calculateScaledX(int x);
+    int calculateScaledY(int y);
     void draw();
     void drawBackground(QPainter& painter);
     void drawMeasurer(QPainter& painter);

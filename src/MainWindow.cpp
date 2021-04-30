@@ -160,8 +160,8 @@ void MainWindow::clearReferenceRectangle()
 
 void MainWindow::setReferencePoint(int x, int y)
 {
-    auto cx = m_scaleShiftX + x / m_scale;
-    auto cy = m_scaleShiftY + y / m_scale;
+    auto cx = calculateScaledX(x);
+    auto cy = calculateScaledY(y);
 
     m_isReferencePointPresent = true;
     m_referencePoint = {cx, cy};
@@ -175,8 +175,8 @@ void MainWindow::clearReferencePoint()
 
 void MainWindow::calculateCursorRectangle(int x, int y)
 {
-    auto cx = m_scaleShiftX + x / m_scale;
-    auto cy = m_scaleShiftY + y / m_scale;
+    auto cx = calculateScaledX(x);
+    auto cy = calculateScaledY(y);
     auto w = m_screenImage.width();
     auto h = m_screenImage.height();
     auto color = m_screenImage.pixel(cx, cy);
@@ -311,6 +311,16 @@ void MainWindow::calculateMeasurer()
             m_measureVValue -= 2;
         }
     }
+}
+
+int MainWindow::calculateScaledX(int x)
+{
+    return m_scaleShiftX + x / m_scale;
+}
+
+int MainWindow::calculateScaledY(int y)
+{
+    return m_scaleShiftY + y / m_scale;
 }
 
 int MainWindow::beamTo(int startPos, int endPos, int coord, int step,
