@@ -10,10 +10,12 @@ CONFIG += c++11
 
 SOURCES += \
     src/MainWindow.cpp \
+    src/Painter.cpp \
     src/main.cpp
 
 HEADERS += \
-    src/MainWindow.h
+    src/MainWindow.h \
+    src/Painter.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
