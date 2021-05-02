@@ -28,18 +28,36 @@ void Painter::drawBackground(const RenderData& renderData)
 
 void Painter::drawMeasurer(const RenderData& renderData)
 {
-    if (renderData.isReferencePointPresent)
+    m_pen.setColor(m_palette.measurerLines);
+    if (abs(renderData.measureHLine.dx()) != 0)
     {
-        m_pen.setColor(m_palette.measurerLines);
+        m_pen.setStyle(Qt::CustomDashLine);
+        m_pen.setDashPattern({1, 4});
         setPen(m_pen);
-        if (abs(renderData.measureHLine.dx()) != 0)
-        {
-            drawMeasurerLine(renderData.measureHLine);
-        }
-        if (abs(renderData.measureVLine.dy()) != 0)
-        {
-            drawMeasurerLine(renderData.measureVLine);
-        }
+
+        drawMeasurerLine(renderData.measureHLine, false, true);
+    }
+    if (abs(renderData.measureVLine.dy()) != 0)
+    {
+        m_pen.setStyle(Qt::CustomDashLine);
+        m_pen.setDashPattern({1, 4});
+        setPen(m_pen);
+
+        drawMeasurerLine(renderData.measureVLine, false, true);
+    }
+    if (abs(renderData.referenceHLine.dx()) != 0)
+    {
+        m_pen.setStyle(Qt::DashDotLine);
+        setPen(m_pen);
+
+        drawMeasurerLine(renderData.referenceHLine, false, true);
+    }
+    if (abs(renderData.referenceVLine.dy()) != 0)
+    {
+        m_pen.setStyle(Qt::DashDotLine);
+        setPen(m_pen);
+
+        drawMeasurerLine(renderData.referenceVLine, false, true);
     }
 }
 
@@ -57,7 +75,7 @@ void Painter::drawRectangles(const RenderData& renderData)
     setPen(m_pen);
     drawRect(toFloat(renderData.cursorRectangle));
 
-    for (auto referenceRectangle : renderData.referenceRectangles)
+    for (auto referenceRectangle : renderData.fixedRectangles)
     {
         if (referenceRectangle != renderData.cursorRectangle)
         {
@@ -68,23 +86,27 @@ void Painter::drawRectangles(const RenderData& renderData)
     }
 }
 
-void Painter::drawMeasurerLine(const QLine &line)
+void Painter::drawMeasurerLine(const QLine &line, bool begTick, bool endTick)
 {
     auto vTick = line.dx() ? 2 : 0;
     auto hTick = line.dy() ? 2 : 0;
-
-    m_pen.setStyle(Qt::DotLine);
-    setPen(m_pen);
 
     drawLine(toFloat(line));
 
     m_pen.setStyle(Qt::SolidLine);
     setPen(m_pen);
 
-    drawLine(toFloat(QLine{line.x1() - hTick, line.y1() - vTick,
-                                   line.x1() + hTick, line.y1() + vTick}));
-    drawLine(toFloat(QLine{line.x2() - hTick, line.y2() - vTick,
-                                   line.x2() + hTick, line.y2() + vTick}));
+    if (begTick)
+    {
+        drawLine(toFloat(QLine{line.x1() - hTick, line.y1() - vTick,
+                                       line.x1() + hTick, line.y1() + vTick}));
+    }
+
+    if (endTick)
+    {
+        drawLine(toFloat(QLine{line.x2() - hTick, line.y2() - vTick,
+                                       line.x2() + hTick, line.y2() + vTick}));
+    }
 }
 
 void Painter::drawValues(const RenderData& renderData)
@@ -93,13 +115,16 @@ void Painter::drawValues(const RenderData& renderData)
     auto vLine = QLine{renderData.cursorRectangle.bottomRight(), renderData.cursorRectangle.topRight()};
     auto hLine = QLine{renderData.cursorRectangle.topLeft(), renderData.cursorRectangle.topRight()};
 
-    drawValue(rect, renderData.measureHLine, abs(renderData.measureHLine.dx()) + 1, m_palette.measurerLines);
-    drawValue(rect, renderData.measureVLine, abs(renderData.measureVLine.dy()) + 1, m_palette.measurerLines);
+    drawValue(rect, renderData.measureHLine, abs(renderData.measureHLine.dx()), m_palette.measurerLines);
+    drawValue(rect, renderData.measureVLine, abs(renderData.measureVLine.dy()), m_palette.measurerLines);
 
-    drawValue(rect, vLine, renderData.cursorRectangle.width() + 1, m_palette.cursorRectangle);
-    drawValue(rect, hLine, renderData.cursorRectangle.height() + 1, m_palette.cursorRectangle);
+    drawValue(rect, renderData.referenceHLine, abs(renderData.referenceHLine.dx()), m_palette.measurerLines);
+    drawValue(rect, renderData.referenceVLine, abs(renderData.referenceVLine.dy()), m_palette.measurerLines);
 
-    for (auto referenceRectangle : renderData.referenceRectangles)
+    drawValue(rect, vLine, renderData.cursorRectangle.height() + 1, m_palette.cursorRectangle);
+    drawValue(rect, hLine, renderData.cursorRectangle.width() + 1, m_palette.cursorRectangle);
+
+    for (auto referenceRectangle : renderData.fixedRectangles)
     {
         if (referenceRectangle != renderData.cursorRectangle)
         {
@@ -114,14 +139,18 @@ void Painter::drawValues(const RenderData& renderData)
 
 void Painter::drawReferencePoint(const RenderData& renderData)
 {
-    if (renderData.isReferencePointPresent)
-    {
-        m_pen.setColor(m_palette.fixedRectangle);
-        setPen(m_pen);
-        auto rect = renderData.windowRectangle;
-        drawLine(toFloat(QLine{renderData.referencePoint.x(), 0, renderData.referencePoint.x(), rect.height() - 1}));
-        drawLine(toFloat(QLine{0, renderData.referencePoint.y(), rect.width() - 1, renderData.referencePoint.y()}));
-    }
+    auto rect = renderData.windowRectangle;
+    auto x = renderData.referencePoint.x();
+    auto y = renderData.referencePoint.y();
+
+    m_pen.setStyle(Qt::DashDotLine);
+    m_pen.setColor(m_palette.fixedRectangle);
+    setPen(m_pen);
+
+    drawLine(toFloat(QLine{x, y, rect.right(), y}));
+    drawLine(toFloat(QLine{x, y, rect.left(), y}));
+    drawLine(toFloat(QLine{x, y, x, rect.top()}));
+    drawLine(toFloat(QLine{x, y, x, rect.bottom()}));
 }
 
 QRectF Painter::toFloat(const QRect& rectangle)

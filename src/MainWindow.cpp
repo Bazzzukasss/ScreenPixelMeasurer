@@ -30,9 +30,12 @@ void MainWindow::initialize()
     m_painter.setPalette(m_palettes[m_paletteIndex]);
     m_renderData.scale = kMinScale;
     m_renderData.isActivated = false;
-    m_renderData.isReferencePointPresent = false;
 
     calculateShifts();
+
+    auto x = calculateScaledX(0);
+    auto y = calculateScaledY(0);
+    m_renderData.referencePoint = {x, y};
 
     new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_P), this, [&](){
         switchPalette();
@@ -51,15 +54,20 @@ void MainWindow::paintEvent(QPaintEvent* event)
 
 void MainWindow::enterEvent(QEvent* event)
 {
+    static bool isFirstEnter{true};
     grabScreen();
 #ifdef Q_OS_WIN
     setWindowOpacity(1);
 #endif
     m_renderData.isActivated = true;
-    if (m_renderData.windowPos != pos())
+
+    if (!isFirstEnter)
     {
-        //clearReferenceRectangle();
+        adjust(m_lastWindowPos.x() - pos().x(),
+               m_lastWindowPos.y() - pos().y());
     }
+
+    isFirstEnter = false;
 
     update();
 
@@ -72,7 +80,8 @@ void MainWindow::leaveEvent(QEvent* event)
     setWindowOpacity(0.1);
 #endif
     m_renderData.isActivated = false;
-    m_renderData.windowPos = pos();
+    m_lastWindowPos = pos();
+
     update();
 
     event->accept();
@@ -80,12 +89,17 @@ void MainWindow::leaveEvent(QEvent* event)
 
 void MainWindow::mouseMoveEvent(QMouseEvent* event)
 {
+    auto x = calculateScaledX(event->x());
+    auto y = calculateScaledY(event->y());
+
     if ( event->buttons() & Qt::LeftButton )
     {
-        setReferencePoint(event->x(), event->y());
+        m_renderData.referencePoint = {x, y};
     }
-    calculateCursorRectangle(event->x(), event->y());
-    calculateMeasurer();
+
+    m_renderData.cursorPoint = {x, y};
+
+    calculate();
     update();
 
     event->accept();
@@ -112,17 +126,24 @@ void MainWindow::wheelEvent(QWheelEvent* event)
 
 void MainWindow::mousePressEvent(QMouseEvent* event)
 {
+    auto x = calculateScaledX(event->x());
+    auto y = calculateScaledY(event->y());
+
     if (event->button() == Qt::RightButton)
     {
         setReferenceRectangle();
     }
     else
     {
-        setReferencePoint(event->x(), event->y());
+        m_renderData.referencePoint = {x, y};
     }
 
-    calculateMeasurer();
+    m_renderData.cursorPoint = {x, y};
+
+    calculate();
     update();
+
+    event->accept();
 }
 
 void MainWindow::resizeEvent(QResizeEvent*)
@@ -139,158 +160,61 @@ void MainWindow::grabScreen()
 
 void MainWindow::setReferenceRectangle()
 {
-    if (m_renderData.referenceRectangles.contains(m_renderData.cursorRectangle))
+    if (m_renderData.fixedRectangles.contains(m_renderData.cursorRectangle))
     {
-        m_renderData.referenceRectangles.removeOne(m_renderData.cursorRectangle);
+        m_renderData.fixedRectangles.removeOne(m_renderData.cursorRectangle);
     }
     else
     {
-        m_renderData.referenceRectangles.append(m_renderData.cursorRectangle);
+        m_renderData.fixedRectangles.append(m_renderData.cursorRectangle);
     }
 }
 
-void MainWindow::setReferencePoint(int x, int y)
+void MainWindow::calculate()
 {
-    auto cx = calculateScaledX(x);
-    auto cy = calculateScaledY(y);
-
-    m_renderData.isReferencePointPresent = true;
-    m_renderData.referencePoint = {cx, cy};
-}
-
-void MainWindow::calculateCursorRectangle(int x, int y)
-{
-    auto cx = calculateScaledX(x);
-    auto cy = calculateScaledY(y);
+    auto x = m_renderData.cursorPoint.x();
+    auto y = m_renderData.cursorPoint.y();
+    auto px = m_renderData.referencePoint.x();
+    auto py = m_renderData.referencePoint.y();
     auto w = m_renderData.screenImage.width();
     auto h = m_renderData.screenImage.height();
-    auto color = m_renderData.screenImage.pixel(cx, cy);
-    auto rx = beamTo(cx, w - 1, cy, 1, Qt::Horizontal, color);
-    auto lx = beamTo(cx, 0, cy, -1, Qt::Horizontal, color);
-    auto by = beamTo(cy, h - 1, cx, 1, Qt::Vertical, color);
-    auto ty = beamTo(cy, 0, cx, -1, Qt::Vertical, color);
+    auto color = m_renderData.screenImage.pixel(x, y);
+    auto r = beamTo(x, w - 1, y, 1, Qt::Horizontal, color);
+    auto l = beamTo(x, 0, y, -1, Qt::Horizontal, color);
+    auto b = beamTo(y, h - 1, x, 1, Qt::Vertical, color);
+    auto t = beamTo(y, 0, x, -1, Qt::Vertical, color);
 
-    m_renderData.cursorPoint = QPoint(cx, cy);
-    m_renderData.cursorHLine = QLine(lx, cy, rx, cy);
-    m_renderData.cursorVLine = QLine(cx, ty, cx, by);
-    m_renderData.cursorRectangle = QRect(lx, ty, m_renderData.cursorHLine.dx(), m_renderData.cursorVLine.dy());
-}
+    m_renderData.cursorHLine = {l, y, r, y};
+    m_renderData.cursorVLine = {x, t, x, b};
+    m_renderData.cursorRectangle = {l, t, r - l, b - t};
+    m_renderData.measureHLine = {x, y, px, y};
+    m_renderData.measureVLine = {x, y, x, py};
 
-void MainWindow::calculateMeasurer()
-{
-    m_renderData.measureVLine = {0, 0, 0, 0};
-    m_renderData.measureHLine = {0, 0, 0, 0};
-
-    if (m_renderData.isReferencePointPresent)
+    if (m_renderData.cursorRectangle.contains(px, py))
     {
-        auto cx = m_renderData.cursorPoint.x();
-        auto cy = m_renderData.cursorPoint.y();
-        auto rx = m_renderData.referencePoint.x();
-        auto ry = m_renderData.referencePoint.y();
-
-        if (cx > rx)
-        {
-            m_renderData.measureHLine = {rx + 1, cy, cx, cy};
-        }
-        else if (cx < rx)
-        {
-            m_renderData.measureHLine = {rx - 1, cy, cx, cy};
-        }
-
-        if (cy > ry)
-        {
-            m_renderData.measureVLine = {cx, cy, cx, ry + 1};
-        }
-        else if (cy < ry)
-        {
-            m_renderData.measureVLine = {cx, cy, cx, ry - 1};
-        }
+        m_renderData.referenceHLine = {px, py, l, py};
+        m_renderData.referenceVLine = {px, py, px, t};
     }
-/*
-    if (m_renderData.isReferenceRectanglePresent &&
-        (m_renderData.cursorRectangle != m_renderData.referenceRectangle))
+    else
     {
-        auto fcx = m_renderData.referenceRectangle.center().x();
-        auto fcy = m_renderData.referenceRectangle.center().y();
-        auto fr = m_renderData.referenceRectangle.right();
-        auto fl = m_renderData.referenceRectangle.left();
-        auto ft = m_renderData.referenceRectangle.top();
-        auto fb = m_renderData.referenceRectangle.bottom();
-
-        auto ccx = m_renderData.cursorRectangle.center().x();
-        auto ccy = m_renderData.cursorRectangle.center().y();
-        auto cr = m_renderData.cursorRectangle.right();
-        auto cl = m_renderData.cursorRectangle.left();
-        auto ct = m_renderData.cursorRectangle.top();
-        auto cb = m_renderData.cursorRectangle.bottom();
-
-        if (m_renderData.cursorRectangle.contains(m_renderData.referenceRectangle))
+        if (b < py)
         {
-            m_renderData.measureHLine = {fl - 1, fcy, cl, fcy};
-            m_renderData.measureVLine = {fcx, ft - 1, fcx, ct};
-            m_renderData.measureHValue = abs(fl - cl);
-            m_renderData.measureVValue = abs(ft - ct);
-        }
-        else if (m_renderData.referenceRectangle.contains(m_renderData.cursorRectangle))
-        {
-            m_renderData.measureHLine = {cl - 1, ccy, fl, ccy};
-            m_renderData.measureVLine = {ccx, ct - 1, ccx, ft};
-            m_renderData.measureHValue = abs(fl - cl);
-            m_renderData.measureVValue = abs(ft - ct);
+             m_renderData.referenceVLine = {px, py, px, b};
         }
         else
         {
-            if (m_renderData.cursorRectangle.bottom() < m_renderData.referenceRectangle.top())
-            {
-                m_renderData.measureVLine = {ccx, cb + 2, ccx, ft - 1};
-                m_renderData.measureVValue = abs(ft - cb);
-            }
-            else if (m_renderData.cursorRectangle.top() > m_renderData.referenceRectangle.bottom())
-            {
-                m_renderData.measureVLine = {ccx, ct - 1, ccx, fb + 2};
-                m_renderData.measureVValue = abs(fb - ct);
-            }
-            else
-            {
-                if (m_renderData.cursorRectangle.top() < m_renderData.referenceRectangle.top())
-                {
-                    m_renderData.measureVLine = {ccx, ct, ccx, ft - 1};
-                }
-                else if (m_renderData.cursorRectangle.top() > m_renderData.referenceRectangle.top())
-                {
-                    m_renderData.measureVLine = {ccx, ct - 1, ccx, ft};
+             m_renderData.referenceVLine = {px, py, px, t};
+        }
 
-                }
-                m_renderData.measureVValue = abs(ft - ct);
-            }
-
-            if (m_renderData.cursorRectangle.right() < m_renderData.referenceRectangle.left())
-            {
-                m_renderData.measureHLine = {cr + 2, ccy, fl - 1, ccy};
-                m_renderData.measureHValue = abs(cr - fl);
-            }
-            else if (m_renderData.cursorRectangle.left() > m_renderData.referenceRectangle.right())
-            {
-                m_renderData.measureHLine = {cl - 1, ccy, fr + 2, ccy};
-                m_renderData.measureHValue = abs(cl - fr);
-            }
-            else
-            {
-                if (m_renderData.cursorRectangle.left() < m_renderData.referenceRectangle.left())
-                {
-                    m_renderData.measureHLine = {cl, ccy, fl - 1, ccy};
-                }
-                else if (m_renderData.cursorRectangle.left() > m_renderData.referenceRectangle.left())
-                {
-                    m_renderData.measureHLine = {cl - 1, ccy, fl, ccy};
-                }
-                m_renderData.measureHValue = abs(cl - fl);
-            }
-            m_renderData.measureHValue -= 2;
-            m_renderData.measureVValue -= 2;
+        if (r < px)
+        {
+            m_renderData.referenceHLine = {px, py, r, py};
+        }
+        else
+        {
+            m_renderData.referenceHLine = {px, py, l, py};
         }
     }
-    */
 }
 
 int MainWindow::calculateScaledX(int x)
@@ -325,6 +249,11 @@ int MainWindow::beamTo(int startPos, int endPos, int coord, int step,
     return resPos;
 }
 
+void MainWindow::calculateShifts()
+{
+    m_renderData.scaleShiftX = (rect().width() - rect().width() / m_renderData.scale) / 2;
+    m_renderData.scaleShiftY = (rect().height() - rect().height() / m_renderData.scale) / 2;
+}
 
 void MainWindow::changeScale(const QPoint& delta)
 {
@@ -343,12 +272,6 @@ void MainWindow::changeScale(const QPoint& delta)
     calculateShifts();
 }
 
-void MainWindow::calculateShifts()
-{
-    m_renderData.scaleShiftX = (rect().width() - rect().width() / m_renderData.scale) / 2;
-    m_renderData.scaleShiftY = (rect().height() - rect().height() / m_renderData.scale) / 2;
-}
-
 void MainWindow::switchPalette()
 {
     if(++m_paletteIndex >= m_palettes.size())
@@ -356,4 +279,15 @@ void MainWindow::switchPalette()
         m_paletteIndex = 0;
     }
     m_painter.setPalette(m_palettes[m_paletteIndex]);
+}
+
+void MainWindow::adjust(int dx, int dy)
+{
+    m_renderData.referencePoint.rx() += dx;
+    m_renderData.referencePoint.ry() += dy;
+
+    for (auto& rectangle : m_renderData.fixedRectangles)
+    {
+        rectangle.translate(dx, dy);
+    }
 }

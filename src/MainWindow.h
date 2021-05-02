@@ -1,5 +1,5 @@
-#ifndef CANVASWIDGET_H
-#define CANVASWIDGET_H
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
 
 #include <QMainWindow>
 #include <QPen>
@@ -20,6 +20,7 @@ class MainWindow : public QMainWindow
         Qt::cyan,
         Qt::darkCyan,
         Qt::yellow,
+        Qt::magenta,
         Qt::yellow,
     };
 
@@ -29,6 +30,7 @@ class MainWindow : public QMainWindow
         Qt::blue,
         Qt::darkBlue,
         Qt::green,
+        Qt::red,
         Qt::green,
     };
 
@@ -48,21 +50,21 @@ private:
     RenderData m_renderData;
     Painter m_painter;
     int m_paletteIndex{0};
+    QPoint m_lastWindowPos;
     QVector<Palette> m_palettes{kDarkPalette, kLightPalette};
 
     void initialize();
     void grabScreen();
     void setReferenceRectangle();
-    void setReferencePoint(int x, int y);
     void changeScale(const QPoint& delta);
+    void switchPalette();
+    void adjust(int dx, int dy);
+    void calculate();
     void calculateShifts();
-    void calculateCursorRectangle(int x, int y);
-    void calculateMeasurer();
     int calculateScaledX(int x);
     int calculateScaledY(int y);
     int beamTo(int startPos, int endPos, int coord, int step,
                Qt::Orientation orientation, const QRgb& color);
-    void switchPalette();
 };
 
-#endif // CANVASWIDGET_H
+#endif // MAINWINDOW_H
