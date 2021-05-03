@@ -15,23 +15,21 @@ class MainWindow : public QMainWindow
     const int kMaxScale{8};
 
     const Palette kDarkPalette {
-        Qt::white,
-        Qt::magenta,
-        Qt::cyan,
-        Qt::darkCyan,
-        Qt::yellow,
-        Qt::magenta,
-        Qt::yellow,
+        Qt::white,                  //border;
+        QColor{0xff, 0xA5, 0x00},   //fixedRectangle;
+        Qt::cyan,                   //cursorRectangle;
+        Qt::darkCyan,               //cursorLines;
+        Qt::yellow,                 //measurerLines;
+        QColor{0xf6, 0x38, 0xdc},   //referenceLines;
     };
 
     const Palette kLightPalette {
         Qt::black,
-        Qt::red,
+        QColor{0x60, 0x20, 0x80},
         Qt::blue,
-        Qt::darkBlue,
-        Qt::green,
-        Qt::red,
-        Qt::green,
+        QColor(Qt::blue).lighter(),
+        QColor{0xe1, 0x64, 0x28},
+        Qt::magenta,
     };
 
 public:
@@ -49,7 +47,7 @@ protected:
 private:
     RenderData m_renderData;
     Painter m_painter;
-    int m_paletteIndex{0};
+    int m_paletteIndex{1};
     QPoint m_lastWindowPos;
     QVector<Palette> m_palettes{kDarkPalette, kLightPalette};
 

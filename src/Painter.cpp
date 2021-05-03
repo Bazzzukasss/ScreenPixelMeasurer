@@ -144,7 +144,7 @@ void Painter::drawReferencePoint(const RenderData& renderData)
     auto y = renderData.referencePoint.y();
 
     m_pen.setStyle(Qt::DashDotLine);
-    m_pen.setColor(m_palette.fixedRectangle);
+    m_pen.setColor(m_palette.referenceLines);
     setPen(m_pen);
 
     drawLine(toFloat(QLine{x, y, rect.right(), y}));

@@ -11,7 +11,6 @@ struct Palette {
     QColor cursorLines;
     QColor measurerLines;
     QColor referenceLines;
-    QColor measurerText;
 };
 
 struct RenderData{

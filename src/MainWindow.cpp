@@ -37,7 +37,7 @@ void MainWindow::initialize()
     auto y = calculateScaledY(0);
     m_renderData.referencePoint = {x, y};
 
-    new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_P), this, [&](){
+    new QShortcut(QKeySequence(Qt::Key_P), this, [&](){
         switchPalette();
         update();
     });
