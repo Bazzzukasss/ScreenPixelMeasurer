@@ -47,7 +47,7 @@ protected:
 private:
     RenderData m_renderData;
     Painter m_painter;
-    int m_paletteIndex{1};
+    int m_paletteIndex{0};
     QPoint m_lastWindowPos;
     QVector<Palette> m_palettes{kDarkPalette, kLightPalette};
 
