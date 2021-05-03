@@ -40,9 +40,7 @@ public:
     explicit Painter(QPaintDevice* device);
 
     void draw(const RenderData& renderData);
-
     void setPalette(const Palette& palette);
-    Palette getPalette() const;
 
 private:
     void initialize();

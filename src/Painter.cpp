@@ -171,11 +171,6 @@ QLineF Painter::toFloat(const QLine& line)
     return QLineF{x1 + 0.5, y1 + 0.5, x2 + 0.5, y2 + 0.5};
 }
 
-Palette Painter::getPalette() const
-{
-    return m_palette;
-}
-
 void Painter::setPalette(const Palette& palette)
 {
     m_palette = palette;
