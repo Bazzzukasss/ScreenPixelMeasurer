@@ -25,7 +25,7 @@ struct RenderData{
     QLine referenceVLine;
     QRect cursorRectangle;
     QRect windowRectangle;
-    QList<QRect> fixedRectangles;
+    QRect fixedRectangle;
     int scale;
     int scaleShiftX;
     int scaleShiftY;

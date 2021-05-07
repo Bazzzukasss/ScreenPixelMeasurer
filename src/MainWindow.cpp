@@ -130,7 +130,7 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
     auto x = calculateScaledX(event->x());
     auto y = calculateScaledY(event->y());
 
-    if (event->button() == Qt::RightButton)
+    if (event->button() == Qt::LeftButton)
     {
         setReferenceRectangle();
     }
@@ -138,8 +138,6 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
     {
         m_renderData.referencePoint = {x, y};
     }
-
-    m_renderData.cursorPoint = {x, y};
 
     calculate();
     update();
@@ -161,13 +159,13 @@ void MainWindow::grabScreen()
 
 void MainWindow::setReferenceRectangle()
 {
-    if (m_renderData.fixedRectangles.contains(m_renderData.cursorRectangle))
+    if (m_renderData.fixedRectangle == m_renderData.cursorRectangle)
     {
-        m_renderData.fixedRectangles.removeOne(m_renderData.cursorRectangle);
+        m_renderData.fixedRectangle = {0, 0, 0, 0};
     }
     else
     {
-        m_renderData.fixedRectangles.append(m_renderData.cursorRectangle);
+        m_renderData.fixedRectangle = m_renderData.cursorRectangle;
     }
 }
 
@@ -286,9 +284,5 @@ void MainWindow::adjust(int dx, int dy)
 {
     m_renderData.referencePoint.rx() += dx;
     m_renderData.referencePoint.ry() += dy;
-
-    for (auto& rectangle : m_renderData.fixedRectangles)
-    {
-        rectangle.translate(dx, dy);
-    }
+    m_renderData.fixedRectangle.translate(dx, dy);
 }

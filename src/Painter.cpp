@@ -19,6 +19,7 @@ void Painter::initialize()
 
 void Painter::drawBackground(const RenderData& renderData)
 {
+    m_pen.setStyle(Qt::SolidLine);
     m_pen.setColor(m_palette.border);
     setPen(m_pen);
     auto rect = renderData.windowRectangle;
@@ -71,18 +72,31 @@ void Painter::drawCursor(const RenderData& renderData)
 
 void Painter::drawRectangles(const RenderData& renderData)
 {
+    m_pen.setStyle(Qt::SolidLine);
     m_pen.setColor(m_palette.cursorRectangle);
     setPen(m_pen);
     drawRect(toFloat(renderData.cursorRectangle));
 
-    for (auto referenceRectangle : renderData.fixedRectangles)
+    if (renderData.fixedRectangle != QRect(0, 0, 0, 0))
     {
-        if (referenceRectangle != renderData.cursorRectangle)
-        {
-            m_pen.setColor(m_palette.fixedRectangle);
-            setPen(m_pen);
-            drawRect(toFloat(referenceRectangle));
-        }
+        m_pen.setColor(m_palette.fixedRectangle);
+        setPen(m_pen);
+        drawRect(toFloat(renderData.fixedRectangle));
+
+        m_pen.setStyle(Qt::CustomDashLine);
+        m_pen.setDashPattern({1, 4});
+        setPen(m_pen);
+
+        auto rect = renderData.windowRectangle;
+        auto t = renderData.fixedRectangle.top();
+        auto b = renderData.fixedRectangle.bottom();
+        auto l = renderData.fixedRectangle.left();
+        auto r = renderData.fixedRectangle.right();
+        drawLine(toFloat(QLine{rect.left(), t, rect.right(), t}));
+        drawLine(toFloat(QLine{rect.left(), b, rect.right(), b}));
+        drawLine(toFloat(QLine{l, rect.bottom(), l, rect.top()}));
+        drawLine(toFloat(QLine{r, rect.bottom(), r, rect.top()}));
+
     }
 }
 
@@ -115,25 +129,22 @@ void Painter::drawValues(const RenderData& renderData)
     auto vLine = QLine{renderData.cursorRectangle.bottomRight(), renderData.cursorRectangle.topRight()};
     auto hLine = QLine{renderData.cursorRectangle.topLeft(), renderData.cursorRectangle.topRight()};
 
-    drawValue(rect, renderData.measureHLine, abs(renderData.measureHLine.dx()), m_palette.measurerLines);
-    drawValue(rect, renderData.measureVLine, abs(renderData.measureVLine.dy()), m_palette.measurerLines);
-
-    drawValue(rect, renderData.referenceHLine, abs(renderData.referenceHLine.dx()), m_palette.measurerLines);
-    drawValue(rect, renderData.referenceVLine, abs(renderData.referenceVLine.dy()), m_palette.measurerLines);
+    //drawValue(rect, renderData.measureHLine, abs(renderData.measureHLine.dx()), m_palette.measurerLines);
+    //drawValue(rect, renderData.measureVLine, abs(renderData.measureVLine.dy()), m_palette.measurerLines);
+    //
+    //drawValue(rect, renderData.referenceHLine, abs(renderData.referenceHLine.dx()), m_palette.measurerLines);
+    //drawValue(rect, renderData.referenceVLine, abs(renderData.referenceVLine.dy()), m_palette.measurerLines);
 
     drawValue(rect, vLine, renderData.cursorRectangle.height() + 1, m_palette.cursorRectangle);
     drawValue(rect, hLine, renderData.cursorRectangle.width() + 1, m_palette.cursorRectangle);
 
-    for (auto referenceRectangle : renderData.fixedRectangles)
+    if (renderData.fixedRectangle != QRect(0, 0, 0, 0))
     {
-        if (referenceRectangle != renderData.cursorRectangle)
-        {
-            vLine = QLine{referenceRectangle.bottomRight(), referenceRectangle.topRight()};
-            hLine = QLine{referenceRectangle.topLeft(), referenceRectangle.topRight()};
+        vLine = QLine{renderData.fixedRectangle.bottomRight(), renderData.fixedRectangle.topRight()};
+        hLine = QLine{renderData.fixedRectangle.topLeft(), renderData.fixedRectangle.topRight()};
 
-            drawValue(rect, vLine, referenceRectangle.height() + 1, m_palette.fixedRectangle);
-            drawValue(rect, hLine, referenceRectangle.width() + 1, m_palette.fixedRectangle);
-        }
+        drawValue(rect, vLine, renderData.fixedRectangle.height() + 1, m_palette.fixedRectangle);
+        drawValue(rect, hLine, renderData.fixedRectangle.width() + 1, m_palette.fixedRectangle);
     }
 }
 
@@ -230,8 +241,8 @@ void Painter::draw(const RenderData& renderData)
         drawBackground(renderData);
         drawCursor(renderData);
         drawRectangles(renderData);
-        drawReferencePoint(renderData);
-        drawMeasurer(renderData);
+        //drawReferencePoint(renderData);
+        //drawMeasurer(renderData);
         drawValues(renderData);
     }
 }
