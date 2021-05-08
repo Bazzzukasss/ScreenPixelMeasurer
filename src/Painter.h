@@ -7,25 +7,24 @@
 struct Palette {
     QColor border;
     QColor fixedRectangle;
+    QColor fixedLines;
     QColor cursorRectangle;
     QColor cursorLines;
     QColor measurerLines;
-    QColor referenceLines;
+    float fontPointSize;
 };
 
 struct RenderData{
     QImage screenImage;
-    QPoint referencePoint;
     QPoint cursorPoint;
     QLine cursorHLine;
     QLine cursorVLine;
     QLine measureHLine;
     QLine measureVLine;
-    QLine referenceHLine;
-    QLine referenceVLine;
     QRect cursorRectangle;
     QRect windowRectangle;
     QRect fixedRectangle;
+    std::array<QLine, 4> fixedLines;
     int scale;
     int scaleShiftX;
     int scaleShiftY;
@@ -44,11 +43,11 @@ public:
 private:
     void initialize();
     void drawBackground(const RenderData& renderData);
-    void drawMeasurer(const RenderData& renderData);
+    void drawMeasurerLines(const RenderData& renderData);
     void drawCursor(const RenderData& renderData);
     void drawRectangles(const RenderData& renderData);
     void drawValues(const RenderData& renderData);
-    void drawReferencePoint(const RenderData& renderData);
+    void drawFixedLines(const RenderData& renderData);
     void drawMeasurerLine(const QLine& line, bool begTick, bool endTick);
     void drawValue(const QRect& rect, const QLine& line, int value, const QColor& color);
     QRectF toFloat(const QRect& rectangle);

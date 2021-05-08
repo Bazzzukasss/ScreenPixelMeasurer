@@ -33,10 +33,6 @@ void MainWindow::initialize()
 
     calculateShifts();
 
-    auto x = calculateScaledX(0);
-    auto y = calculateScaledY(0);
-    m_renderData.referencePoint = {x, y};
-
     auto shortcut = new QShortcut(QKeySequence(Qt::Key_P), this);
     connect(shortcut, &QShortcut::activated, this, [&](){
         switchPalette();
@@ -93,11 +89,6 @@ void MainWindow::mouseMoveEvent(QMouseEvent* event)
     auto x = calculateScaledX(event->x());
     auto y = calculateScaledY(event->y());
 
-    if ( event->buttons() & Qt::LeftButton )
-    {
-        m_renderData.referencePoint = {x, y};
-    }
-
     m_renderData.cursorPoint = {x, y};
 
     calculate();
@@ -134,10 +125,6 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
     {
         setReferenceRectangle();
     }
-    else
-    {
-        m_renderData.referencePoint = {x, y};
-    }
 
     calculate();
     update();
@@ -173,47 +160,105 @@ void MainWindow::calculate()
 {
     auto x = m_renderData.cursorPoint.x();
     auto y = m_renderData.cursorPoint.y();
-    auto px = m_renderData.referencePoint.x();
-    auto py = m_renderData.referencePoint.y();
     auto w = m_renderData.screenImage.width();
     auto h = m_renderData.screenImage.height();
     auto color = m_renderData.screenImage.pixel(x, y);
-    auto r = beamTo(x, w - 1, y, 1, Qt::Horizontal, color);
-    auto l = beamTo(x, 0, y, -1, Qt::Horizontal, color);
-    auto b = beamTo(y, h - 1, x, 1, Qt::Vertical, color);
-    auto t = beamTo(y, 0, x, -1, Qt::Vertical, color);
 
-    m_renderData.cursorHLine = {l, y, r, y};
-    m_renderData.cursorVLine = {x, t, x, b};
-    m_renderData.cursorRectangle = {l, t, r - l, b - t};
-    m_renderData.measureHLine = {x, y, px, y};
-    m_renderData.measureVLine = {x, y, x, py};
+    auto cr = beamTo(x, w - 1, y, 1, Qt::Horizontal, color);
+    auto cl = beamTo(x, 0, y, -1, Qt::Horizontal, color);
+    auto cb = beamTo(y, h - 1, x, 1, Qt::Vertical, color);
+    auto ct = beamTo(y, 0, x, -1, Qt::Vertical, color);
 
-    if (m_renderData.cursorRectangle.contains(px, py))
+    auto ft = m_renderData.fixedRectangle.top();
+    auto fb = m_renderData.fixedRectangle.bottom();
+    auto fl = m_renderData.fixedRectangle.left();
+    auto fr = m_renderData.fixedRectangle.right();
+
+    auto wt = m_renderData.windowRectangle.top();
+    auto wb = m_renderData.windowRectangle.bottom();
+    auto wl = m_renderData.windowRectangle.left();
+    auto wr = m_renderData.windowRectangle.right();
+
+    m_renderData.fixedLines[0] = {wl, ft, wr, ft};
+    m_renderData.fixedLines[1] = {wl, fb + 1, wr, fb + 1};
+    m_renderData.fixedLines[2] = {fl, wb, fl, wt};
+    m_renderData.fixedLines[3] = {fr + 1, wb, fr + 1, wt};
+
+    m_renderData.cursorHLine = {cl, y, cr, y};
+    m_renderData.cursorVLine = {x, ct, x, cb};
+    m_renderData.cursorRectangle = {cl, ct, cr - cl, cb - ct};
+
+    auto ccx = m_renderData.cursorRectangle.center().x();
+    auto ccy = m_renderData.cursorRectangle.center().y();
+    auto fcx = m_renderData.fixedRectangle.center().x();
+    auto fcy = m_renderData.fixedRectangle.center().y();
+    int hx1{0},hx2{0},hy1{0},hy2{0};
+    int vx1{0},vx2{0},vy1{0},vy2{0};
+
+    if (m_renderData.cursorRectangle == m_renderData.fixedRectangle)
     {
-        m_renderData.referenceHLine = {px, py, l, py};
-        m_renderData.referenceVLine = {px, py, px, t};
     }
     else
     {
-        if (b < py)
+        if (m_renderData.cursorRectangle.contains(m_renderData.fixedRectangle))
         {
-             m_renderData.referenceVLine = {px, py, px, b};
+            hx2 = fl - 1;   hy2 = fcy;      hx1 = cl;   hy1 = fcy;
+            vx2 = fcx;      vy2= ft - 1;    vx1 = fcx;  vy1 = ct;
+        }
+        else if (m_renderData.fixedRectangle.contains(m_renderData.cursorRectangle))
+        {
+            hx2 = cl - 1;   hy2 = ccy;      hx1 =fl;    hy1 = ccy;
+            vx2 = ccx;      vy2 = ct - 1;   vx1 = ccx;  vy1 = ft;
         }
         else
         {
-             m_renderData.referenceVLine = {px, py, px, t};
-        }
+            vx1 = vx2 = ccx;
+            hy1 = hy2 = ccy;
 
-        if (r < px)
-        {
-            m_renderData.referenceHLine = {px, py, r, py};
-        }
-        else
-        {
-            m_renderData.referenceHLine = {px, py, l, py};
+            if (cb < ft)
+            {
+                vy1 = cb + 1; vy2 = ft - 1;
+            }
+            else if (ct > fb)
+            {
+                vy1 = fb + 2; vy2 = ct - 1;
+            }
+            else
+            {
+                if (ct < ft)
+                {
+                    vy1 = ct; vy2 = ft - 1;
+                }
+                else if (ct > ft)
+                {
+                     vy1 = ft; vy2 = ct - 1;
+                }
+            }
+
+            if (cr < fl)
+            {
+                hx1 = cr + 1; hx2 = fl - 1;
+            }
+            else if (cl > fr)
+            {
+                hx1 = fr + 2; hx2 = cl - 1;
+            }
+            else
+            {
+                if (cl < fl)
+                {
+                    hx1 = cl;  hx2 = fl - 1;
+                }
+                else if (cl > fl)
+                {
+                    hx1 = fl; hx2 = cl - 1;
+                }
+            }
         }
     }
+
+    m_renderData.measureVLine = {vx1, vy1, vx2, vy2};
+    m_renderData.measureHLine = {hx1, hy1, hx2, hy2};
 }
 
 int MainWindow::calculateScaledX(int x)
@@ -282,7 +327,5 @@ void MainWindow::switchPalette()
 
 void MainWindow::adjust(int dx, int dy)
 {
-    m_renderData.referencePoint.rx() += dx;
-    m_renderData.referencePoint.ry() += dy;
     m_renderData.fixedRectangle.translate(dx, dy);
 }

@@ -16,20 +16,22 @@ class MainWindow : public QMainWindow
 
     const Palette kDarkPalette {
         Qt::white,                  //border;
-        QColor{0xff, 0xA5, 0x00},   //fixedRectangle;
+        QColor{0xe4a8f9},           //fixedRectangle;
+        QColor{0x99ea86},           //fixedLines;
         Qt::cyan,                   //cursorRectangle;
         Qt::darkCyan,               //cursorLines;
         Qt::yellow,                 //measurerLines;
-        QColor{0xf6, 0x38, 0xdc},   //referenceLines;
+        6.0
     };
 
     const Palette kLightPalette {
         Qt::black,
-        QColor{0x60, 0x20, 0x80},
-        Qt::blue,
-        QColor(Qt::blue).lighter(),
-        QColor{0xe1, 0x64, 0x28},
         Qt::magenta,
+        Qt::darkGreen,//QColor{0xff8029},
+        Qt::darkBlue,
+        Qt::blue,
+        Qt::red,
+        6.0
     };
 
 public:
