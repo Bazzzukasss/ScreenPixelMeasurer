@@ -104,7 +104,7 @@ void MainWindow::wheelEvent(QWheelEvent* event)
 
     if (!numPixels.isNull())
     {
-       changeScale(numPixels);
+        changeScale(numPixels);
     }
     else if (!numDegrees.isNull())
     {
@@ -118,12 +118,13 @@ void MainWindow::wheelEvent(QWheelEvent* event)
 
 void MainWindow::mousePressEvent(QMouseEvent* event)
 {
-    auto x = calculateScaledX(event->x());
-    auto y = calculateScaledY(event->y());
-
     if (event->button() == Qt::LeftButton)
     {
-        setReferenceRectangle();
+        setFixedRectangle();
+    }
+    else
+    {
+        clearFixedRectangle();
     }
 
     calculate();
@@ -144,16 +145,14 @@ void MainWindow::grabScreen()
     m_renderData.screenImage = screen->grabWindow(descktop->winId()).toImage().copy(geometry());
 }
 
-void MainWindow::setReferenceRectangle()
+void MainWindow::setFixedRectangle()
 {
-    if (m_renderData.fixedRectangle == m_renderData.cursorRectangle)
-    {
-        m_renderData.fixedRectangle = {0, 0, 0, 0};
-    }
-    else
-    {
-        m_renderData.fixedRectangle = m_renderData.cursorRectangle;
-    }
+    m_renderData.fixedRectangle = m_renderData.cursorRectangle;
+}
+
+void MainWindow::clearFixedRectangle()
+{
+    m_renderData.fixedRectangle = {0, 0, 0, 0};
 }
 
 void MainWindow::calculate()

@@ -19,19 +19,16 @@ void Painter::initialize()
 
 void Painter::drawBackground(const RenderData& renderData)
 {
-    m_pen.setStyle(Qt::SolidLine);
-    m_pen.setColor(m_palette.border);
-    setPen(m_pen);
     auto rect = renderData.windowRectangle;
+    applyPen(m_palette.border, Qt::SolidLine);
     drawImage(rect, renderData.screenImage);
     drawRect(toFloat(QRect{0, 0, rect.width() - 1, rect.height() - 1}));
 }
 
 void Painter::drawMeasurerLines(const RenderData& renderData)
 {
-    if (renderData.fixedRectangle != QRect(0, 0, 0, 0))
+    if (isFixedRectanglePresent(renderData))
     {
-        m_pen.setColor(m_palette.measurerLines);
         if (renderData.measureHLine.dx() > 0)
         {
             drawMeasurerLine(renderData.measureHLine, true, true);
@@ -43,26 +40,21 @@ void Painter::drawMeasurerLines(const RenderData& renderData)
     }
 }
 
-void Painter::drawCursor(const RenderData& renderData)
+void Painter::drawCursorLines(const RenderData& renderData)
 {
-    m_pen.setColor(m_palette.cursorLines);
-    setPen(m_pen);
+    applyPen(m_palette.cursorLines, Qt::SolidLine);
     drawLine(toFloat(renderData.cursorHLine));
     drawLine(toFloat(renderData.cursorVLine));
 }
 
 void Painter::drawRectangles(const RenderData& renderData)
 {
-    m_pen.setStyle(Qt::SolidLine);
-    m_pen.setColor(m_palette.cursorRectangle);
-    setPen(m_pen);
+    applyPen(m_palette.cursorRectangle, Qt::SolidLine);
     drawRect(toFloat(renderData.cursorRectangle));
 
-    if (renderData.fixedRectangle != QRect(0, 0, 0, 0))
+    if (isFixedRectanglePresent(renderData))
     {
-        m_pen.setStyle(Qt::SolidLine);
-        m_pen.setColor(m_palette.fixedRectangle);
-        setPen(m_pen);
+        applyPen(m_palette.fixedRectangle, Qt::SolidLine);
         drawRect(toFloat(renderData.fixedRectangle));
     }
 }
@@ -72,13 +64,10 @@ void Painter::drawMeasurerLine(const QLine &line, bool begTick, bool endTick)
     auto vTick = line.dx() ? 2 : 0;
     auto hTick = line.dy() ? 2 : 0;
 
-    m_pen.setStyle(Qt::DotLine);
-    setPen(m_pen);
+    applyPen(m_palette.measurerLines, Qt::DotLine);
     drawLine(toFloat(line));
 
-    m_pen.setStyle(Qt::SolidLine);
-    setPen(m_pen);
-
+    applyPen(m_palette.measurerLines, Qt::SolidLine);
     if (begTick)
     {
         drawLine(toFloat(QLine{line.x1() - hTick, line.y1() - vTick,
@@ -96,7 +85,7 @@ void Painter::drawValues(const RenderData& renderData)
 {
     auto fnt = font();
     fnt.setBold(true);
-    fnt.setPointSize(m_palette.fontPointSize + 3.0);
+    fnt.setPointSize(m_palette.fontPointSize + 2.0);
     setFont(fnt);
 
     auto rect = renderData.windowRectangle;
@@ -106,7 +95,7 @@ void Painter::drawValues(const RenderData& renderData)
     drawValue(rect, vLine, renderData.cursorRectangle.height() + 1, m_palette.cursorRectangle);
     drawValue(rect, hLine, renderData.cursorRectangle.width() + 1, m_palette.cursorRectangle);
 
-    if (renderData.fixedRectangle != QRect(0, 0, 0, 0))
+    if (isFixedRectanglePresent(renderData))
     {
         vLine = QLine{renderData.fixedRectangle.bottomRight(), renderData.fixedRectangle.topRight()};
         hLine = QLine{renderData.fixedRectangle.topLeft(), renderData.fixedRectangle.topRight()};
@@ -117,19 +106,19 @@ void Painter::drawValues(const RenderData& renderData)
         setFont(fnt);
         drawValue(rect, renderData.measureHLine, renderData.measureHLine.dx() + 1, m_palette.measurerLines);
         drawValue(rect, renderData.measureVLine, renderData.measureVLine.dy() + 1, m_palette.measurerLines);
-
     }
 }
 
 void Painter::drawFixedLines(const RenderData& renderData)
 {
-    m_pen.setStyle(Qt::DashLine);
-    m_pen.setColor(m_palette.fixedLines);
-    setPen(m_pen);
-
-    for (auto line : renderData.fixedLines)
+    if (isFixedRectanglePresent(renderData))
     {
-        drawLine(toFloat(line));
+        applyPen(m_palette.fixedLines, Qt::DashLine);
+
+        for (auto line : renderData.fixedLines)
+        {
+            drawLine(toFloat(line));
+        }
     }
 }
 
@@ -139,7 +128,7 @@ QRectF Painter::toFloat(const QRect& rectangle)
     float y = rectangle.y();
     float w = rectangle.width();
     float h = rectangle.height();
-    return QRectF{x+ 0.5, y + 0.5, w , h};
+    return QRectF{x + 0.5, y + 0.5, w , h};
 }
 
 QLineF Painter::toFloat(const QLine& line)
@@ -151,6 +140,18 @@ QLineF Painter::toFloat(const QLine& line)
     return QLineF{x1 + 0.5, y1 + 0.5, x2 + 0.5, y2 + 0.5};
 }
 
+bool Painter::isFixedRectanglePresent(const RenderData& renderData) const
+{
+    return renderData.fixedRectangle != QRect(0, 0, 0, 0);
+}
+
+void Painter::applyPen(const QColor& color, Qt::PenStyle style)
+{
+    m_pen.setColor(color);
+    m_pen.setStyle(style);
+    setPen(m_pen);
+}
+
 void Painter::setPalette(const Palette& palette)
 {
     m_palette = palette;
@@ -158,43 +159,45 @@ void Painter::setPalette(const Palette& palette)
 
 void Painter::drawValue(const QRect& rect, const QLine& line, int value, const QColor& color)
 {
-    QFontMetrics fm(font());
+    auto fm = fontMetrics();
     auto text = QString::number(value);
-    auto textH = fm.height();
-    auto textShift{2};
-    int x{0}, y{0}, textW;
-
+    int x{0}, y{0};
+    QRect textRect = fm.boundingRect(text);
+    int textW = textRect.width();
+    auto textH = textRect.height();
 
     if (value != 0)
     {
         if (line.x1() == line.x2())
         {
-            textW = fm.horizontalAdvance(text);
-            x = line.x1() + textShift;
-            y = line.center().y() + textH / 4;
+            x = line.x1() + 3;
+            y = line.center().y() + textH / 2;
+
             if (x + textW > rect.right())
             {
-                x = qMin(line.x1(), rect.right()) - textW - textShift;
+                x = qMin(line.x1(), rect.right()) - textW;
             }
         }
         else if (line.y1() == line.y2())
         {
-            textW = fm.horizontalAdvance(text);
             x = line.center().x() - textW / 2;
-            y = line.y1() - textShift;
-            if (y < textH + textShift)
+            y = line.y1();
+
+            if (y < textH)
             {
-                y = line.y1() + textH;
+                y = line.y1() + textH + 1;
             }
             if (x + textW / 2 > rect.right())
             {
-                x = rect.right() - textW - textShift;
+                x = rect.right() - textW - 2;
             }
         }
 
-        m_pen.setColor(color);
-        setPen(m_pen);
-        drawText(x, y, text);
+        textRect.moveTo(x, y - textH);
+        applyPen(color, Qt::SolidLine);
+
+        fillRect(textRect, m_palette.background);
+        drawText(textRect, Qt::AlignCenter, text);
     }
 }
 
@@ -208,7 +211,7 @@ void Painter::draw(const RenderData& renderData)
         translate(-renderData.scaleShiftX, -renderData.scaleShiftY);
 
         drawBackground(renderData);
-        drawCursor(renderData);
+        drawCursorLines(renderData);
         drawFixedLines(renderData);
         drawRectangles(renderData);
         drawMeasurerLines(renderData);

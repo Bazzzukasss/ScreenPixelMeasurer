@@ -15,23 +15,25 @@ class MainWindow : public QMainWindow
     const int kMaxScale{8};
 
     const Palette kDarkPalette {
+        QColor{0x333333},           //background
         Qt::white,                  //border;
-        QColor{0xe4a8f9},           //fixedRectangle;
+        QColor{0xE4A8F9},           //fixedRectangle;
         QColor{0x99ea86},           //fixedLines;
         Qt::cyan,                   //cursorRectangle;
         Qt::darkCyan,               //cursorLines;
         Qt::yellow,                 //measurerLines;
-        6.0
+        8.0
     };
 
     const Palette kLightPalette {
+        QColor{0xcccccc},
         Qt::black,
         Qt::magenta,
-        Qt::darkGreen,//QColor{0xff8029},
+        Qt::darkGreen,
         Qt::darkBlue,
         Qt::blue,
         Qt::red,
-        6.0
+        8.0
     };
 
 public:
@@ -55,7 +57,8 @@ private:
 
     void initialize();
     void grabScreen();
-    void setReferenceRectangle();
+    void setFixedRectangle();
+    void clearFixedRectangle();
     void changeScale(const QPoint& delta);
     void switchPalette();
     void adjust(int dx, int dy);

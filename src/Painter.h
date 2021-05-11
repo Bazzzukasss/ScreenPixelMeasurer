@@ -5,6 +5,7 @@
 #include <QSet>
 
 struct Palette {
+    QColor background;
     QColor border;
     QColor fixedRectangle;
     QColor fixedLines;
@@ -44,7 +45,7 @@ private:
     void initialize();
     void drawBackground(const RenderData& renderData);
     void drawMeasurerLines(const RenderData& renderData);
-    void drawCursor(const RenderData& renderData);
+    void drawCursorLines(const RenderData& renderData);
     void drawRectangles(const RenderData& renderData);
     void drawValues(const RenderData& renderData);
     void drawFixedLines(const RenderData& renderData);
@@ -52,6 +53,8 @@ private:
     void drawValue(const QRect& rect, const QLine& line, int value, const QColor& color);
     QRectF toFloat(const QRect& rectangle);
     QLineF toFloat(const QLine& line);
+    bool isFixedRectanglePresent(const RenderData& renderData) const;
+    void applyPen(const QColor& color, Qt::PenStyle style);
 
 private:
     QPen m_pen;
