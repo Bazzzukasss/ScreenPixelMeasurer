@@ -168,15 +168,10 @@ void MainWindow::calculate()
     auto cb = beamTo(y, h - 1, x, 1, Qt::Vertical, color);
     auto ct = beamTo(y, 0, x, -1, Qt::Vertical, color);
 
-    auto ft = m_renderData.fixedRectangle.top();
-    auto fb = m_renderData.fixedRectangle.bottom();
-    auto fl = m_renderData.fixedRectangle.left();
-    auto fr = m_renderData.fixedRectangle.right();
-
-    auto wt = m_renderData.windowRectangle.top();
-    auto wb = m_renderData.windowRectangle.bottom();
-    auto wl = m_renderData.windowRectangle.left();
-    auto wr = m_renderData.windowRectangle.right();
+    int fl, ft, fb, fr;
+    int wl, wt, wb, wr;
+    m_renderData.fixedRectangle.getCoords(&fl, &ft, &fr, &fb);
+    m_renderData.windowRectangle.getCoords(&wl, &wt, &wr, &wb);
 
     m_renderData.fixedLines[0] = {wl, ft, wr, ft};
     m_renderData.fixedLines[1] = {wl, fb + 1, wr, fb + 1};

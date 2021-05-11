@@ -162,7 +162,7 @@ void Painter::drawValue(const QRect& rect, const QLine& line, int value, const Q
     auto fm = fontMetrics();
     auto text = QString::number(value);
     int x{0}, y{0};
-    QRect textRect = fm.boundingRect(text);
+    QRect textRect = fm.boundingRect(text).marginsAdded({4, 0, 4, 0});
     int textW = textRect.width();
     auto textH = textRect.height();
 
