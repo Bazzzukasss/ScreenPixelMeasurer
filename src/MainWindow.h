@@ -53,6 +53,8 @@ private:
     Painter m_painter;
     int m_paletteIndex{0};
     QPoint m_lastWindowPos;
+    QPoint m_lastMousePos;
+    QPoint m_deltaPos;
     QVector<Palette> m_palettes{kDarkPalette, kLightPalette};
 
     void initialize();

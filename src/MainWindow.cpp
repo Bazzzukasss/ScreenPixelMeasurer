@@ -4,7 +4,7 @@
 #include <QKeyEvent>
 #include <QShortcut>
 #include <QtMath>
-
+#include <QDebug>
 #include "MainWindow.h"
 
 MainWindow::MainWindow(QWidget* parent) :
@@ -30,6 +30,8 @@ void MainWindow::initialize()
     m_painter.setPalette(m_palettes[m_paletteIndex]);
     m_renderData.scale = kMinScale;
     m_renderData.isActivated = false;
+    m_renderData.centerShiftX = 0;
+    m_renderData.centerShiftY = 0;
 
     calculateShifts();
 
@@ -91,6 +93,22 @@ void MainWindow::mouseMoveEvent(QMouseEvent* event)
 
     m_renderData.cursorPoint = {x, y};
 
+    if (event->buttons())
+    {
+        auto shiftX = m_lastMousePos.x() - event->x() / m_renderData.scale;
+        auto shiftY = m_lastMousePos.y() - event->y() / m_renderData.scale;
+
+        if (abs(shiftX) < m_renderData.scaleShiftX)
+        {
+            m_renderData.centerShiftX = shiftX;
+        }
+
+        if (abs(shiftY) < m_renderData.scaleShiftY)
+        {
+            m_renderData.centerShiftY = shiftY;
+        }
+    }
+
     calculate();
     update();
 
@@ -102,6 +120,9 @@ void MainWindow::wheelEvent(QWheelEvent* event)
     QPoint numPixels = event->pixelDelta();
     QPoint numDegrees = event->angleDelta() / 8;
 
+    //m_renderData.centerShiftX = m_lastMousePos.x() - event->position().x();
+    //m_renderData.centerShiftY = m_lastMousePos.y() - event->position().y();
+
     if (!numPixels.isNull())
     {
         changeScale(numPixels);
@@ -111,6 +132,12 @@ void MainWindow::wheelEvent(QWheelEvent* event)
         changeScale(numDegrees);
     }
 
+    auto x = calculateScaledX(event->position().x());
+    auto y = calculateScaledY(event->position().y());
+
+    m_renderData.cursorPoint = {x, y};
+
+    calculate();
     update();
 
     event->accept();
@@ -126,6 +153,10 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
     {
         clearFixedRectangle();
     }
+
+    m_lastMousePos = {m_renderData.centerShiftX + event->x() / m_renderData.scale,
+                      m_renderData.centerShiftY + event->y() / m_renderData.scale};
+    m_deltaPos = {0, 0};
 
     calculate();
     update();
@@ -257,12 +288,12 @@ void MainWindow::calculate()
 
 int MainWindow::calculateScaledX(int x)
 {
-    return m_renderData.scaleShiftX + x / m_renderData.scale;
+    return m_renderData.scaleShiftX + x / m_renderData.scale + m_renderData.centerShiftX;
 }
 
 int MainWindow::calculateScaledY(int y)
 {
-    return m_renderData.scaleShiftY + y / m_renderData.scale;
+    return m_renderData.scaleShiftY + y / m_renderData.scale + m_renderData.centerShiftY;
 }
 
 int MainWindow::beamTo(int startPos, int endPos, int coord, int step,

@@ -29,6 +29,8 @@ struct RenderData{
     int scale;
     int scaleShiftX;
     int scaleShiftY;
+    int centerShiftX;
+    int centerShiftY;
     bool isActivated;
 };
 

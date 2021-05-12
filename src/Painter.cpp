@@ -208,7 +208,8 @@ void Painter::draw(const RenderData& renderData)
         setRenderHint(QPainter::Antialiasing, false);
 
         scale(renderData.scale, renderData.scale);
-        translate(-renderData.scaleShiftX, -renderData.scaleShiftY);
+        translate(-(renderData.scaleShiftX + renderData.centerShiftX),
+                  -(renderData.scaleShiftY + renderData.centerShiftY));
 
         drawBackground(renderData);
         drawCursorLines(renderData);
