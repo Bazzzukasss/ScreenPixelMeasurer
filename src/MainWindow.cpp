@@ -7,6 +7,8 @@
 #include <QDebug>
 #include "MainWindow.h"
 
+//#define DRAG_ENABLED
+
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent)
 {
@@ -81,6 +83,7 @@ void MainWindow::leaveEvent(QEvent* event)
     m_renderData.isActivated = false;
     m_lastWindowPos = pos();
 
+    calculateShifts();
     update();
 
     event->accept();
@@ -93,7 +96,8 @@ void MainWindow::mouseMoveEvent(QMouseEvent* event)
 
     m_renderData.cursorPoint = {x, y};
 
-    if (event->buttons())
+#ifdef DRAG_ENABLED
+    if (event->buttons() & Qt::RightButton)
     {
         auto shiftX = m_lastMousePos.x() - event->x() / m_renderData.scale;
         auto shiftY = m_lastMousePos.y() - event->y() / m_renderData.scale;
@@ -108,6 +112,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent* event)
             m_renderData.centerShiftY = shiftY;
         }
     }
+#endif
 
     calculate();
     update();
@@ -119,9 +124,6 @@ void MainWindow::wheelEvent(QWheelEvent* event)
 {
     QPoint numPixels = event->pixelDelta();
     QPoint numDegrees = event->angleDelta() / 8;
-
-    //m_renderData.centerShiftX = m_lastMousePos.x() - event->position().x();
-    //m_renderData.centerShiftY = m_lastMousePos.y() - event->position().y();
 
     if (!numPixels.isNull())
     {
@@ -156,7 +158,6 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
 
     m_lastMousePos = {m_renderData.centerShiftX + event->x() / m_renderData.scale,
                       m_renderData.centerShiftY + event->y() / m_renderData.scale};
-    m_deltaPos = {0, 0};
 
     calculate();
     update();
