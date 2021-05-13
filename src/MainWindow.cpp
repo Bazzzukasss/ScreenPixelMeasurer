@@ -32,10 +32,13 @@ void MainWindow::initialize()
     m_painter.setPalette(m_palettes[m_paletteIndex]);
     m_renderData.scale = kMinScale;
     m_renderData.isActivated = false;
+    m_renderData.isMeasurerMode = false;
     m_renderData.centerShiftX = 0;
     m_renderData.centerShiftY = 0;
-
-    calculateShifts();
+    m_renderData.scaleShiftX = 0;
+    m_renderData.scaleShiftY = 0;
+    m_renderData.fixedRectangle = QRect(0, 0, 0, 0);
+    m_renderData.measureRectangle = QRect(0, 0, 0, 0);
 
     auto shortcut = new QShortcut(QKeySequence(Qt::Key_P), this);
     connect(shortcut, &QShortcut::activated, this, [&](){
@@ -96,6 +99,11 @@ void MainWindow::mouseMoveEvent(QMouseEvent* event)
 
     m_renderData.cursorPoint = {x, y};
 
+    if (m_renderData.isMeasurerMode)
+    {
+        m_renderData.measureRectangle.setBottomRight({x, y});
+    }
+
 #ifdef DRAG_ENABLED
     if (event->buttons() & Qt::RightButton)
     {
@@ -147,13 +155,18 @@ void MainWindow::wheelEvent(QWheelEvent* event)
 
 void MainWindow::mousePressEvent(QMouseEvent* event)
 {
+    auto x = calculateScaledX(event->x());
+    auto y = calculateScaledY(event->y());
+
     if (event->button() == Qt::LeftButton)
     {
         setFixedRectangle();
     }
     else
     {
-        clearFixedRectangle();
+        m_renderData.isMeasurerMode = true;
+        m_renderData.measureRectangle.setTopLeft({x, y});
+        m_renderData.measureRectangle.setBottomRight({x, y});
     }
 
     m_lastMousePos = {m_renderData.centerShiftX + event->x() / m_renderData.scale,
@@ -165,8 +178,18 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
     event->accept();
 }
 
+void MainWindow::mouseReleaseEvent(QMouseEvent* event)
+{
+    m_renderData.isMeasurerMode = false;
+
+    update();
+
+    event->accept();
+}
+
 void MainWindow::resizeEvent(QResizeEvent*)
 {
+    calculateShifts();
     m_renderData.windowRectangle = rect();
 }
 
@@ -204,6 +227,9 @@ void MainWindow::calculate()
     int wl, wt, wb, wr;
     m_renderData.fixedRectangle.getCoords(&fl, &ft, &fr, &fb);
     m_renderData.windowRectangle.getCoords(&wl, &wt, &wr, &wb);
+    m_renderData.scaledRectangle = {m_renderData.scaleShiftX, m_renderData.scaleShiftY,
+                                   rect().width() / m_renderData.scale - 1, rect().height() / m_renderData.scale - 1};
+
 
     m_renderData.fixedLines[0] = {wl, ft, wr, ft};
     m_renderData.fixedLines[1] = {wl, fb + 1, wr, fb + 1};
@@ -321,8 +347,10 @@ int MainWindow::beamTo(int startPos, int endPos, int coord, int step,
 
 void MainWindow::calculateShifts()
 {
-    m_renderData.scaleShiftX = (rect().width() - rect().width() / m_renderData.scale) / 2;
-    m_renderData.scaleShiftY = (rect().height() - rect().height() / m_renderData.scale) / 2;
+    auto w = rect().width() / 2;
+    auto h = rect().height() / 2;
+    m_renderData.scaleShiftX = w - w / m_renderData.scale;
+    m_renderData.scaleShiftY = h - h / m_renderData.scale;
 }
 
 void MainWindow::changeScale(const QPoint& delta)

@@ -1,4 +1,5 @@
 #include "Painter.h"
+#include <QDebug>
 
 Painter::Painter()
 {
@@ -19,10 +20,9 @@ void Painter::initialize()
 
 void Painter::drawBackground(const RenderData& renderData)
 {
-    auto rect = renderData.windowRectangle;
     applyPen(m_palette.border, Qt::SolidLine);
-    drawImage(rect, renderData.screenImage);
-    drawRect(toFloat(QRect{0, 0, rect.width() - 1, rect.height() - 1}));
+    drawImage(renderData.windowRectangle, renderData.screenImage);
+    drawRect(toFloat(renderData.scaledRectangle));
 }
 
 void Painter::drawMeasurerLines(const RenderData& renderData)
@@ -47,15 +47,27 @@ void Painter::drawCursorLines(const RenderData& renderData)
     drawLine(toFloat(renderData.cursorVLine));
 }
 
-void Painter::drawRectangles(const RenderData& renderData)
+void Painter::drawCursorRectangle(const RenderData& renderData)
 {
     applyPen(m_palette.cursorRectangle, Qt::SolidLine);
     drawRect(toFloat(renderData.cursorRectangle));
+}
 
+void Painter::drawFixedRectangle(const RenderData& renderData)
+{
     if (isFixedRectanglePresent(renderData))
     {
         applyPen(m_palette.fixedRectangle, Qt::SolidLine);
         drawRect(toFloat(renderData.fixedRectangle));
+    }
+}
+
+void Painter::drawMeasureRectangle(const RenderData& renderData)
+{
+    if (isMeasureRectanglePresent(renderData))
+    {
+        applyPen(m_palette.cursorRectangle, Qt::SolidLine);
+        drawRect(toFloat(renderData.measureRectangle));
     }
 }
 
@@ -81,31 +93,44 @@ void Painter::drawMeasurerLine(const QLine &line, bool begTick, bool endTick)
     }
 }
 
+void Painter::drawValue(const QRect& windowRect, const QRect& measureRect, const QColor& color)
+{
+    auto vLine = QLine{measureRect.bottomRight(), measureRect.topRight()};
+    auto hLine = QLine{measureRect.topLeft(), measureRect.topRight()};
+    drawValue(windowRect, vLine, abs(measureRect.height()) + 1, color);
+    drawValue(windowRect, hLine, abs(measureRect.width()) + 1, color);
+}
+
 void Painter::drawValues(const RenderData& renderData)
 {
+    auto fsize = m_palette.fontPointSize / renderData.scale;
     auto fnt = font();
     fnt.setBold(true);
-    fnt.setPointSize(m_palette.fontPointSize + 2.0);
+    fnt.setPointSizeF(fsize + 2.0);
     setFont(fnt);
 
-    auto rect = renderData.windowRectangle;
-    auto vLine = QLine{renderData.cursorRectangle.bottomRight(), renderData.cursorRectangle.topRight()};
-    auto hLine = QLine{renderData.cursorRectangle.topLeft(), renderData.cursorRectangle.topRight()};
+    auto rect = renderData.scaledRectangle;
 
-    drawValue(rect, vLine, renderData.cursorRectangle.height() + 1, m_palette.cursorRectangle);
-    drawValue(rect, hLine, renderData.cursorRectangle.width() + 1, m_palette.cursorRectangle);
-
-    if (isFixedRectanglePresent(renderData))
+    if (renderData.isMeasurerMode)
     {
-        vLine = QLine{renderData.fixedRectangle.bottomRight(), renderData.fixedRectangle.topRight()};
-        hLine = QLine{renderData.fixedRectangle.topLeft(), renderData.fixedRectangle.topRight()};
-        drawValue(rect, vLine, renderData.fixedRectangle.height() + 1, m_palette.fixedRectangle);
-        drawValue(rect, hLine, renderData.fixedRectangle.width() + 1, m_palette.fixedRectangle);
+        if (isMeasureRectanglePresent(renderData))
+        {
+            drawValue(rect, renderData.measureRectangle, m_palette.cursorRectangle);
+        }
+    }
+    else
+    {
+        drawValue(rect, renderData.cursorRectangle, m_palette.cursorRectangle);
 
-        fnt.setPointSize(m_palette.fontPointSize);
-        setFont(fnt);
-        drawValue(rect, renderData.measureHLine, renderData.measureHLine.dx() + 1, m_palette.measurerLines);
-        drawValue(rect, renderData.measureVLine, renderData.measureVLine.dy() + 1, m_palette.measurerLines);
+        if (isFixedRectanglePresent(renderData))
+        {
+            drawValue(rect, renderData.fixedRectangle, m_palette.fixedRectangle);
+
+            fnt.setPointSizeF(fsize + 0.5);
+            setFont(fnt);
+            drawValue(rect, renderData.measureHLine, renderData.measureHLine.dx() + 1, m_palette.measurerLines);
+            drawValue(rect, renderData.measureVLine, renderData.measureVLine.dy() + 1, m_palette.measurerLines);
+        }
     }
 }
 
@@ -142,7 +167,14 @@ QLineF Painter::toFloat(const QLine& line)
 
 bool Painter::isFixedRectanglePresent(const RenderData& renderData) const
 {
-    return renderData.fixedRectangle != QRect(0, 0, 0, 0);
+    return renderData.fixedRectangle.height() != 0 &&
+            renderData.fixedRectangle.width() != 0;
+}
+
+bool Painter::isMeasureRectanglePresent(const RenderData &renderData) const
+{
+    return renderData.measureRectangle.bottomLeft() !=
+           renderData.measureRectangle.topRight();
 }
 
 void Painter::applyPen(const QColor& color, Qt::PenStyle style)
@@ -162,7 +194,7 @@ void Painter::drawValue(const QRect& rect, const QLine& line, int value, const Q
     auto fm = fontMetrics();
     auto text = QString::number(value);
     int x{0}, y{0};
-    QRect textRect = fm.boundingRect(text).marginsAdded({4, 0, 4, 0});
+    QRect textRect = fm.boundingRect(text).marginsAdded({1, 0, 1, 0});
     int textW = textRect.width();
     auto textH = textRect.height();
 
@@ -172,25 +204,31 @@ void Painter::drawValue(const QRect& rect, const QLine& line, int value, const Q
         {
             x = line.x1() + 3;
             y = line.center().y() + textH / 2;
-
-            if (x + textW > rect.right())
-            {
-                x = qMin(line.x1(), rect.right()) - textW;
-            }
         }
         else if (line.y1() == line.y2())
         {
             x = line.center().x() - textW / 2;
             y = line.y1();
+        }
 
-            if (y < textH)
-            {
-                y = line.y1() + textH + 1;
-            }
-            if (x + textW / 2 > rect.right())
-            {
-                x = rect.right() - textW - 2;
-            }
+        if (x + textW > rect.right())
+        {
+            x = rect.right() - textW;
+        }
+
+        if (x < rect.left())
+        {
+            x = rect.left();
+        }
+
+        if (y - textH < rect.top())
+        {
+            y = rect.top() + textH;
+        }
+
+        if (y > rect.bottom())
+        {
+            y = rect.bottom();
         }
 
         textRect.moveTo(x, y - textH);
@@ -212,10 +250,19 @@ void Painter::draw(const RenderData& renderData)
                   -(renderData.scaleShiftY + renderData.centerShiftY));
 
         drawBackground(renderData);
-        drawCursorLines(renderData);
-        drawFixedLines(renderData);
-        drawRectangles(renderData);
-        drawMeasurerLines(renderData);
+        if (renderData.isMeasurerMode)
+        {
+            drawMeasureRectangle(renderData);
+        }
+        else
+        {
+            drawCursorLines(renderData);
+            drawFixedLines(renderData);
+            drawFixedRectangle(renderData);
+            drawCursorRectangle(renderData);
+            drawMeasurerLines(renderData);
+        }
+
         drawValues(renderData);
     }
 }
