@@ -160,7 +160,14 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
 
     if (event->button() == Qt::LeftButton)
     {
-        setFixedRectangle();
+        if (m_renderData.fixedRectangle != m_renderData.cursorRectangle)
+        {
+            setFixedRectangle();
+        }
+        else
+        {
+            clearFixedRectangle();
+        }
     }
     else
     {
