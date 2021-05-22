@@ -5,7 +5,10 @@
 #include <QPen>
 #include <QSet>
 
-#include "Painter.h"
+#include "data.h"
+#include "view.h"
+#include "scene.h"
+
 
 class MainWindow : public QMainWindow
 {
@@ -40,22 +43,19 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
 
 protected:
-    void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEvent* event) override;
     void leaveEvent(QEvent* event) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
     void resizeEvent(QResizeEvent *event) override;
 
 private:
     RenderData m_renderData;
-    Painter m_painter;
     int m_paletteIndex{0};
     QPoint m_lastWindowPos;
     QPoint m_lastMousePos;
     QVector<Palette> m_palettes{kDarkPalette, kLightPalette};
+    View* m_view;
+    Scene* m_scene;
 
     void initialize();
     void grabScreen();
@@ -70,6 +70,11 @@ private:
     int calculateScaledY(int y);
     int beamTo(int startPos, int endPos, int coord, int step,
                Qt::Orientation orientation, const QRgb& color);
+private:
+    void onMouseMove(QMouseEvent* event);
+    void onMousePress(QMouseEvent* event);
+    void onMouseRelease(QMouseEvent* event);
+
 };
 
 #endif // MAINWINDOW_H

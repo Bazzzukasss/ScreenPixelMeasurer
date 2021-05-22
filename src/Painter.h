@@ -4,38 +4,7 @@
 #include <QPainter>
 #include <QSet>
 
-struct Palette {
-    QColor background;
-    QColor border;
-    QColor fixedRectangle;
-    QColor fixedLines;
-    QColor cursorRectangle;
-    QColor cursorLines;
-    QColor measurerLines;
-    float fontPointSize;
-};
-
-struct RenderData{
-    QImage screenImage;
-    QPoint cursorPoint;
-    QLine cursorHLine;
-    QLine cursorVLine;
-    QLine measureHLine;
-    QLine measureVLine;
-    QRect cursorRectangle;
-    QRect windowRectangle;
-    QRect fixedRectangle;
-    QRect scaledRectangle;
-    QRect measureRectangle;
-    std::array<QLine, 4> fixedLines;
-    int scale;
-    int scaleShiftX;
-    int scaleShiftY;
-    int centerShiftX;
-    int centerShiftY;
-    bool isActivated;
-    bool isMeasurerMode;
-};
+#include "data.h"
 
 class Painter : public QPainter
 {

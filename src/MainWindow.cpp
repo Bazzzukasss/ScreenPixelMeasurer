@@ -5,7 +5,10 @@
 #include <QShortcut>
 #include <QtMath>
 #include <QDebug>
+#include <QGraphicsView>
+#include <QVBoxLayout>
 #include "MainWindow.h"
+#include "scene.h"
 
 //#define DRAG_ENABLED
 
@@ -29,7 +32,6 @@ MainWindow::MainWindow(QWidget* parent) :
 
 void MainWindow::initialize()
 {
-    m_painter.setPalette(m_palettes[m_paletteIndex]);
     m_renderData.scale = kMinScale;
     m_renderData.isActivated = false;
     m_renderData.isMeasurerMode = false;
@@ -45,21 +47,33 @@ void MainWindow::initialize()
         switchPalette();
         update();
     });
-}
 
-void MainWindow::paintEvent(QPaintEvent* event)
-{
-    m_painter.begin(this);
-    m_painter.draw(m_renderData);
-    m_painter.end();
+    m_scene = new Scene(this);
+    m_scene->setPalette(m_palettes[m_paletteIndex]);
 
-    event->accept();
+    m_view = new View(this);
+    m_view->setScene(m_scene);
+    m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    auto layout = new QVBoxLayout();
+    layout->addWidget(m_view);
+    layout->setMargin(0);
+
+    auto centralWidget = new QWidget(this);
+    centralWidget->setLayout(layout);
+    setCentralWidget(centralWidget);
+
+    connect(m_view, &View::mouseMoved, this, &MainWindow::onMouseMove);
+    connect(m_view, &View::mousePressed, this, &MainWindow::onMousePress);
+    connect(m_view, &View::mouseReleaseed, this, &MainWindow::onMouseRelease);
 }
 
 void MainWindow::enterEvent(QEvent* event)
 {
     static bool isFirstEnter{true};
     grabScreen();
+    m_view->show();
 #ifdef Q_OS_WIN
     setWindowOpacity(1);
 #endif
@@ -73,7 +87,7 @@ void MainWindow::enterEvent(QEvent* event)
 
     isFirstEnter = false;
 
-    update();
+    m_scene->setRenderData(m_renderData);
 
     event->accept();
 }
@@ -83,16 +97,18 @@ void MainWindow::leaveEvent(QEvent* event)
 #ifdef Q_OS_WIN
     setWindowOpacity(0.1);
 #endif
+    m_view->hide();
     m_renderData.isActivated = false;
     m_lastWindowPos = pos();
 
     calculateShifts();
-    update();
+
+    m_scene->setRenderData(m_renderData);
 
     event->accept();
 }
 
-void MainWindow::mouseMoveEvent(QMouseEvent* event)
+void MainWindow::onMouseMove(QMouseEvent* event)
 {
     auto x = calculateScaledX(event->x());
     auto y = calculateScaledY(event->y());
@@ -123,7 +139,8 @@ void MainWindow::mouseMoveEvent(QMouseEvent* event)
 #endif
 
     calculate();
-    update();
+
+    m_scene->setRenderData(m_renderData);
 
     event->accept();
 }
@@ -148,12 +165,13 @@ void MainWindow::wheelEvent(QWheelEvent* event)
     m_renderData.cursorPoint = {x, y};
 
     calculate();
-    update();
+
+    m_scene->setRenderData(m_renderData);
 
     event->accept();
 }
 
-void MainWindow::mousePressEvent(QMouseEvent* event)
+void MainWindow::onMousePress(QMouseEvent* event)
 {
     auto x = calculateScaledX(event->x());
     auto y = calculateScaledY(event->y());
@@ -180,16 +198,18 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
                       m_renderData.centerShiftY + event->y() / m_renderData.scale};
 
     calculate();
-    update();
+
+    m_scene->setRenderData(m_renderData);
+    //update();
 
     event->accept();
 }
 
-void MainWindow::mouseReleaseEvent(QMouseEvent* event)
+void MainWindow::onMouseRelease(QMouseEvent* event)
 {
     m_renderData.isMeasurerMode = false;
 
-    update();
+    m_scene->setRenderData(m_renderData);
 
     event->accept();
 }
@@ -204,7 +224,7 @@ void MainWindow::grabScreen()
 {
     auto screen = QGuiApplication::primaryScreen();
     auto descktop = QApplication::desktop();
-    m_renderData.screenImage = screen->grabWindow(descktop->winId()).toImage().copy(geometry());
+    m_renderData.screenImage = screen->grabWindow(descktop->winId()).copy(geometry().adjusted(1, 1, -1, -1));
 }
 
 void MainWindow::setFixedRectangle()
@@ -223,7 +243,7 @@ void MainWindow::calculate()
     auto y = m_renderData.cursorPoint.y();
     auto w = m_renderData.screenImage.width();
     auto h = m_renderData.screenImage.height();
-    auto color = m_renderData.screenImage.pixel(x, y);
+    auto color = m_renderData.screenImage.toImage().pixel(x, y);
 
     auto cr = beamTo(x, w - 1, y, 1, Qt::Horizontal, color);
     auto cl = beamTo(x, 0, y, -1, Qt::Horizontal, color);
@@ -344,7 +364,7 @@ int MainWindow::beamTo(int startPos, int endPos, int coord, int step,
             break;
         }
 
-        if (m_renderData.screenImage.pixel(point) != color)
+        if (m_renderData.screenImage.toImage().pixel(point) != color)
         {
             return pos - step;
         }
@@ -375,6 +395,8 @@ void MainWindow::changeScale(const QPoint& delta)
     }
 
     calculateShifts();
+    m_view->resetTransform();
+    m_view->scale(m_renderData.scale, m_renderData.scale);
 }
 
 void MainWindow::switchPalette()
@@ -383,10 +405,11 @@ void MainWindow::switchPalette()
     {
         m_paletteIndex = 0;
     }
-    m_painter.setPalette(m_palettes[m_paletteIndex]);
+    m_scene->setPalette(m_palettes[m_paletteIndex]);
 }
 
 void MainWindow::adjust(int dx, int dy)
 {
     m_renderData.fixedRectangle.translate(dx, dy);
 }
+

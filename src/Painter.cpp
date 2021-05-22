@@ -21,7 +21,7 @@ void Painter::initialize()
 void Painter::drawBackground(const RenderData& renderData)
 {
     applyPen(m_palette.border, Qt::SolidLine);
-    drawImage(renderData.windowRectangle, renderData.screenImage);
+    drawPixmap(renderData.windowRectangle, renderData.screenImage);
     drawRect(toFloat(renderData.scaledRectangle));
 }
 
