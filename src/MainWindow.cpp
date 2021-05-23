@@ -7,8 +7,10 @@
 #include <QDebug>
 #include <QGraphicsView>
 #include <QVBoxLayout>
+#include <QScrollBar>
 #include "MainWindow.h"
 #include "scene.h"
+#include "view.h"
 
 //#define DRAG_ENABLED
 
@@ -37,8 +39,6 @@ void MainWindow::initialize()
     m_renderData.isMeasurerMode = false;
     m_renderData.centerShiftX = 0;
     m_renderData.centerShiftY = 0;
-    m_renderData.scaleShiftX = 0;
-    m_renderData.scaleShiftY = 0;
     m_renderData.fixedRectangle = QRect(0, 0, 0, 0);
     m_renderData.measureRectangle = QRect(0, 0, 0, 0);
 
@@ -53,8 +53,6 @@ void MainWindow::initialize()
 
     m_view = new View(this);
     m_view->setScene(m_scene);
-    m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     auto layout = new QVBoxLayout();
     layout->addWidget(m_view);
@@ -67,6 +65,7 @@ void MainWindow::initialize()
     connect(m_view, &View::mouseMoved, this, &MainWindow::onMouseMove);
     connect(m_view, &View::mousePressed, this, &MainWindow::onMousePress);
     connect(m_view, &View::mouseReleaseed, this, &MainWindow::onMouseRelease);
+    connect(m_view, &View::mouseScrolled, this, &MainWindow::onMouseScroll);
 }
 
 void MainWindow::enterEvent(QEvent* event)
@@ -98,11 +97,7 @@ void MainWindow::leaveEvent(QEvent* event)
     setWindowOpacity(0.1);
 #endif
     m_view->hide();
-    m_renderData.isActivated = false;
     m_lastWindowPos = pos();
-
-    calculateShifts();
-
     m_scene->setRenderData(m_renderData);
 
     event->accept();
@@ -110,42 +105,35 @@ void MainWindow::leaveEvent(QEvent* event)
 
 void MainWindow::onMouseMove(QMouseEvent* event)
 {
-    auto x = calculateScaledX(event->x());
-    auto y = calculateScaledY(event->y());
-
-    m_renderData.cursorPoint = {x, y};
+    m_renderData.cursorPoint = m_view->mapToScene(event->x(), event->y()).toPoint();
 
     if (m_renderData.isMeasurerMode)
     {
-        m_renderData.measureRectangle.setBottomRight({x, y});
+        m_renderData.measureRectangle.setBottomRight(m_renderData.cursorPoint);
     }
-
-#ifdef DRAG_ENABLED
-    if (event->buttons() & Qt::RightButton)
-    {
-        auto shiftX = m_lastMousePos.x() - event->x() / m_renderData.scale;
-        auto shiftY = m_lastMousePos.y() - event->y() / m_renderData.scale;
-
-        if (abs(shiftX) < m_renderData.scaleShiftX)
-        {
-            m_renderData.centerShiftX = shiftX;
-        }
-
-        if (abs(shiftY) < m_renderData.scaleShiftY)
-        {
-            m_renderData.centerShiftY = shiftY;
-        }
-    }
-#endif
 
     calculate();
+
+    if (event->buttons() & Qt::RightButton)
+    {
+        auto dx = event->x() - m_lastMousePos.x();
+        auto dy = event->y() - m_lastMousePos.y();
+
+        auto sx = m_view->horizontalScrollBar()->value();
+        auto sy = m_view->verticalScrollBar()->value();
+
+        m_view->horizontalScrollBar()->setValue(sx - dx);
+        m_view->verticalScrollBar()->setValue(sy - dy);
+
+        m_lastMousePos = {event->x(), event->y()};
+    }
 
     m_scene->setRenderData(m_renderData);
 
     event->accept();
 }
 
-void MainWindow::wheelEvent(QWheelEvent* event)
+void MainWindow::onMouseScroll(QWheelEvent* event)
 {
     QPoint numPixels = event->pixelDelta();
     QPoint numDegrees = event->angleDelta() / 8;
@@ -159,23 +147,22 @@ void MainWindow::wheelEvent(QWheelEvent* event)
         changeScale(numDegrees);
     }
 
-    auto x = calculateScaledX(event->position().x());
-    auto y = calculateScaledY(event->position().y());
+    auto targetViewportPos = event->position();
+    auto targetScenePos = m_view->mapToScene(event->position().toPoint());
+    QPointF deltaViewportPos = targetViewportPos - QPointF(m_view->viewport()->width() / 2.0, m_view->viewport()->height() / 2.0);
 
-    m_renderData.cursorPoint = {x, y};
+    m_view->resetTransform();
+    m_view->scale(m_renderData.scale, m_renderData.scale);
+    m_view->centerOn(targetScenePos);
 
-    calculate();
-
-    m_scene->setRenderData(m_renderData);
+    QPointF viewportCenter = m_view->mapFromScene(targetScenePos) - deltaViewportPos;
+    m_view->centerOn(m_view->mapToScene(viewportCenter.toPoint()));
 
     event->accept();
 }
 
 void MainWindow::onMousePress(QMouseEvent* event)
 {
-    auto x = calculateScaledX(event->x());
-    auto y = calculateScaledY(event->y());
-
     if (event->button() == Qt::LeftButton)
     {
         if (m_renderData.fixedRectangle != m_renderData.cursorRectangle)
@@ -190,17 +177,15 @@ void MainWindow::onMousePress(QMouseEvent* event)
     else
     {
         m_renderData.isMeasurerMode = true;
-        m_renderData.measureRectangle.setTopLeft({x, y});
-        m_renderData.measureRectangle.setBottomRight({x, y});
+        m_renderData.measureRectangle.setTopLeft(m_renderData.cursorPoint);
+        m_renderData.measureRectangle.setBottomRight(m_renderData.cursorPoint);
     }
 
-    m_lastMousePos = {m_renderData.centerShiftX + event->x() / m_renderData.scale,
-                      m_renderData.centerShiftY + event->y() / m_renderData.scale};
+    m_lastMousePos = {event->x(), event->y()};
 
     calculate();
 
     m_scene->setRenderData(m_renderData);
-    //update();
 
     event->accept();
 }
@@ -216,7 +201,6 @@ void MainWindow::onMouseRelease(QMouseEvent* event)
 
 void MainWindow::resizeEvent(QResizeEvent*)
 {
-    calculateShifts();
     m_renderData.windowRectangle = rect();
 }
 
@@ -254,8 +238,8 @@ void MainWindow::calculate()
     int wl, wt, wb, wr;
     m_renderData.fixedRectangle.getCoords(&fl, &ft, &fr, &fb);
     m_renderData.windowRectangle.getCoords(&wl, &wt, &wr, &wb);
-    m_renderData.scaledRectangle = {m_renderData.scaleShiftX, m_renderData.scaleShiftY,
-                                   rect().width() / m_renderData.scale - 1, rect().height() / m_renderData.scale - 1};
+    //m_renderData.scaledRectangle = {m_renderData.scaleShiftX, m_renderData.scaleShiftY,
+    //                               rect().width() / m_renderData.scale - 1, rect().height() / m_renderData.scale - 1};
 
 
     m_renderData.fixedLines[0] = {wl, ft, wr, ft};
@@ -340,16 +324,6 @@ void MainWindow::calculate()
     m_renderData.measureHLine = {hx1, hy1, hx2, hy2};
 }
 
-int MainWindow::calculateScaledX(int x)
-{
-    return m_renderData.scaleShiftX + x / m_renderData.scale + m_renderData.centerShiftX;
-}
-
-int MainWindow::calculateScaledY(int y)
-{
-    return m_renderData.scaleShiftY + y / m_renderData.scale + m_renderData.centerShiftY;
-}
-
 int MainWindow::beamTo(int startPos, int endPos, int coord, int step,
                        Qt::Orientation orientation, const QRgb& color)
 {
@@ -372,14 +346,6 @@ int MainWindow::beamTo(int startPos, int endPos, int coord, int step,
     return resPos;
 }
 
-void MainWindow::calculateShifts()
-{
-    auto w = rect().width() / 2;
-    auto h = rect().height() / 2;
-    m_renderData.scaleShiftX = w - w / m_renderData.scale;
-    m_renderData.scaleShiftY = h - h / m_renderData.scale;
-}
-
 void MainWindow::changeScale(const QPoint& delta)
 {
     m_renderData.scale += delta.y() > 0 ? 1 : -1;
@@ -393,10 +359,6 @@ void MainWindow::changeScale(const QPoint& delta)
     {
         m_renderData.scale = kMinScale;
     }
-
-    calculateShifts();
-    m_view->resetTransform();
-    m_view->scale(m_renderData.scale, m_renderData.scale);
 }
 
 void MainWindow::switchPalette()

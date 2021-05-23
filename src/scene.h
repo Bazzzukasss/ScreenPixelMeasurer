@@ -23,6 +23,7 @@ private:
     QGraphicsRectItem* m_fixedRectangleItem;
     std::array<QGraphicsLineItem*, 2> m_referenceVLinesItem;
     std::array<QGraphicsLineItem*, 2> m_referenceHLinesItem;
+    std::array<QGraphicsLineItem*, 4> m_fixedLinesItem;
 
 private:
     void initialize();

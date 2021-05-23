@@ -27,3 +27,9 @@ void View::mouseMoveEvent(QMouseEvent *event)
     emit mouseMoved(event);
     event->accept();
 }
+
+void View::wheelEvent(QWheelEvent* event)
+{
+    emit mouseScrolled(event);
+    event->accept();
+}

@@ -23,6 +23,10 @@ void Scene::setRenderData(const RenderData& renderData)
     m_cursorRectangleItem->setRect(renderData.cursorRectangle);
     m_fixedRectangleItem->setRect(renderData.fixedRectangle);
 
+    for(auto i = 0; i < m_fixedLinesItem.size(); ++i)
+    {
+        m_fixedLinesItem[i]->setLine(renderData.fixedLines[i]);
+    }
     //m_referenceVLinesItem[0] = addLine({});
     //m_referenceVLinesItem[1] = addLine({});
     //m_referenceHLinesItem[0] = addLine({});
@@ -44,19 +48,31 @@ void Scene::setPalette(const Palette& palette)
     m_referenceVLinesItem[1]->setPen(palette.measurerLines);
     m_referenceHLinesItem[0]->setPen(palette.measurerLines);
     m_referenceHLinesItem[1]->setPen(palette.measurerLines);
+
+    for (auto lineItem : m_fixedLinesItem)
+    {
+        lineItem->setPen(palette.fixedLines);
+    }
 }
 
 void Scene::initialize()
 {
     m_screenImageItem = addPixmap({});
+    m_screenImageItem->setPos(0, 0);
     m_cursorHLineItem = addLine({});
     m_cursorVLineItem = addLine({});
     m_measureHLineItem = addLine({});
     m_measureVLineItem = addLine({});
     m_cursorRectangleItem = addRect({});
     m_fixedRectangleItem = addRect({});
+
     m_referenceVLinesItem[0] = addLine({});
     m_referenceVLinesItem[1] = addLine({});
     m_referenceHLinesItem[0] = addLine({});
     m_referenceHLinesItem[1] = addLine({});
+
+    for (auto& lineItem : m_fixedLinesItem)
+    {
+        lineItem = addLine({});
+    }
 }

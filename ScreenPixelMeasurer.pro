@@ -11,7 +11,6 @@ CONFIG += c++11
 SOURCES += \
     src/scene.cpp \
     src/MainWindow.cpp \
-    src/Painter.cpp \
     src/main.cpp \
     src/view.cpp
 
@@ -19,7 +18,6 @@ HEADERS += \
     src/data.h \
     src/scene.h \
     src/MainWindow.h \
-    src/Painter.h \
     src/view.h
 
 # Default rules for deployment.

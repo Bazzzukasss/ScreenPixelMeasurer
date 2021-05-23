@@ -45,7 +45,6 @@ public:
 protected:
     void enterEvent(QEvent* event) override;
     void leaveEvent(QEvent* event) override;
-    void wheelEvent(QWheelEvent* event) override;
     void resizeEvent(QResizeEvent *event) override;
 
 private:
@@ -65,15 +64,13 @@ private:
     void switchPalette();
     void adjust(int dx, int dy);
     void calculate();
-    void calculateShifts();
-    int calculateScaledX(int x);
-    int calculateScaledY(int y);
     int beamTo(int startPos, int endPos, int coord, int step,
                Qt::Orientation orientation, const QRgb& color);
 private:
     void onMouseMove(QMouseEvent* event);
     void onMousePress(QMouseEvent* event);
     void onMouseRelease(QMouseEvent* event);
+    void onMouseScroll(QWheelEvent* event);
 
 };
 
