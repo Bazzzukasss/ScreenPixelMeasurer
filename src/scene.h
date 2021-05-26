@@ -4,6 +4,7 @@
 #include <QGraphicsScene>
 
 #include "data.h"
+#include "items.h"
 
 class Scene : public QGraphicsScene
 {
@@ -15,18 +16,25 @@ public:
 
 private:
     QGraphicsPixmapItem* m_screenImageItem;
-    QGraphicsLineItem* m_cursorHLineItem;
-    QGraphicsLineItem* m_cursorVLineItem;
-    QGraphicsLineItem* m_measureHLineItem;
-    QGraphicsLineItem* m_measureVLineItem;
-    QGraphicsRectItem* m_cursorRectangleItem;
-    QGraphicsRectItem* m_fixedRectangleItem;
-    std::array<QGraphicsLineItem*, 2> m_referenceVLinesItem;
-    std::array<QGraphicsLineItem*, 2> m_referenceHLinesItem;
-    std::array<QGraphicsLineItem*, 4> m_fixedLinesItem;
+    MeasureSimpleLineItem* m_cursorHLineItem;
+    MeasureSimpleLineItem* m_cursorVLineItem;
+    MeasureLineItem* m_measureHLineItem;
+    MeasureLineItem* m_measureVLineItem;
+    MeasureRectItem* m_cursorRectangleItem;
+    MeasureRectItem* m_fixedRectangleItem;
+    std::array<MeasureSimpleLineItem*, 2> m_referenceVLinesItem;
+    std::array<MeasureSimpleLineItem*, 2> m_referenceHLinesItem;
+    std::array<MeasureSimpleLineItem*, 4> m_fixedLinesItem;
 
 private:
     void initialize();
+    void hideAll();
+    void setVisibility(const RenderData& renderData);
+    template<typename T>
+    T* addMeasureGraphicsItem();
+
+    QRectF toFloat(const QRect& rectangle);
+    QLineF toFloat(const QLine& line);
 };
 
 #endif // SCENE_H

@@ -29,10 +29,8 @@ struct RenderData{
     QRect measureRectangle;
     std::array<QLine, 4> fixedLines;
     int scale;
-    int centerShiftX;
-    int centerShiftY;
-    bool isActivated;
-    bool isMeasurerMode;
+    bool isMeasurerRectPresent;
+    bool isFixedRectVisible;
 };
 
 #endif // DATA_H

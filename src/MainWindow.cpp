@@ -35,12 +35,8 @@ MainWindow::MainWindow(QWidget* parent) :
 void MainWindow::initialize()
 {
     m_renderData.scale = kMinScale;
-    m_renderData.isActivated = false;
-    m_renderData.isMeasurerMode = false;
-    m_renderData.centerShiftX = 0;
-    m_renderData.centerShiftY = 0;
-    m_renderData.fixedRectangle = QRect(0, 0, 0, 0);
-    m_renderData.measureRectangle = QRect(0, 0, 0, 0);
+    m_renderData.isMeasurerRectPresent = false;
+    m_renderData.isFixedRectVisible = false;
 
     auto shortcut = new QShortcut(QKeySequence(Qt::Key_P), this);
     connect(shortcut, &QShortcut::activated, this, [&](){
@@ -76,8 +72,6 @@ void MainWindow::enterEvent(QEvent* event)
 #ifdef Q_OS_WIN
     setWindowOpacity(1);
 #endif
-    m_renderData.isActivated = true;
-
     if (!isFirstEnter)
     {
         adjust(m_lastWindowPos.x() - pos().x(),
@@ -106,11 +100,6 @@ void MainWindow::leaveEvent(QEvent* event)
 void MainWindow::onMouseMove(QMouseEvent* event)
 {
     m_renderData.cursorPoint = m_view->mapToScene(event->x(), event->y()).toPoint();
-
-    if (m_renderData.isMeasurerMode)
-    {
-        m_renderData.measureRectangle.setBottomRight(m_renderData.cursorPoint);
-    }
 
     calculate();
 
@@ -174,12 +163,6 @@ void MainWindow::onMousePress(QMouseEvent* event)
             clearFixedRectangle();
         }
     }
-    else
-    {
-        m_renderData.isMeasurerMode = true;
-        m_renderData.measureRectangle.setTopLeft(m_renderData.cursorPoint);
-        m_renderData.measureRectangle.setBottomRight(m_renderData.cursorPoint);
-    }
 
     m_lastMousePos = {event->x(), event->y()};
 
@@ -192,8 +175,6 @@ void MainWindow::onMousePress(QMouseEvent* event)
 
 void MainWindow::onMouseRelease(QMouseEvent* event)
 {
-    m_renderData.isMeasurerMode = false;
-
     m_scene->setRenderData(m_renderData);
 
     event->accept();
@@ -214,11 +195,13 @@ void MainWindow::grabScreen()
 void MainWindow::setFixedRectangle()
 {
     m_renderData.fixedRectangle = m_renderData.cursorRectangle;
+    m_renderData.isFixedRectVisible = true;
 }
 
 void MainWindow::clearFixedRectangle()
 {
     m_renderData.fixedRectangle = {0, 0, 0, 0};
+    m_renderData.isFixedRectVisible = false;
 }
 
 void MainWindow::calculate()
@@ -244,8 +227,8 @@ void MainWindow::calculate()
 
     m_renderData.fixedLines[0] = {wl, ft, wr, ft};
     m_renderData.fixedLines[1] = {wl, fb + 1, wr, fb + 1};
-    m_renderData.fixedLines[2] = {fl, wb, fl, wt};
-    m_renderData.fixedLines[3] = {fr + 1, wb, fr + 1, wt};
+    m_renderData.fixedLines[2] = {fl, wt, fl, wb};
+    m_renderData.fixedLines[3] = {fr + 1, wt, fr + 1, wb};
 
     m_renderData.cursorHLine = {cl, y, cr, y};
     m_renderData.cursorVLine = {x, ct, x, cb};
