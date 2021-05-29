@@ -147,6 +147,8 @@ void MainWindow::onMouseScroll(QWheelEvent* event)
     QPointF viewportCenter = m_view->mapFromScene(targetScenePos) - deltaViewportPos;
     m_view->centerOn(m_view->mapToScene(viewportCenter.toPoint()));
 
+    m_scene->setRenderData(m_renderData);
+
     event->accept();
 }
 

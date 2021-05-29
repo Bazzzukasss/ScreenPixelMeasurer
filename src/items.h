@@ -47,9 +47,12 @@ protected:
 private:
     QGraphicsLineItem* m_line;
     std::array<QGraphicsLineItem*, 2> m_ticks;
-    QGraphicsSimpleTextItem* m_text;
+    QGraphicsTextItem* m_text;
     bool m_isTextPresent;
     bool m_isTicksPresent;
+
+private:
+    void updateText();
 };
 
 class MeasureSimpleLineItem : public MeasureLineItem
@@ -73,8 +76,11 @@ protected:
 
 private:
     QGraphicsRectItem* m_rect;
-    QGraphicsSimpleTextItem* m_wText;
-    QGraphicsSimpleTextItem* m_hText;
+    QGraphicsTextItem* m_wText;
+    QGraphicsTextItem* m_hText;
+
+private:
+    void updateText();
 };
 
 #endif // MEASURELINEITEM_H
