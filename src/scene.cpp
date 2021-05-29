@@ -56,6 +56,11 @@ void Scene::setPalette(const Palette& palette)
     {
         lineItem->setColor(palette.fixedLines);
     }
+
+    for (auto item : m_items)
+    {
+        item->setBgColor(palette.background);
+    }
 }
 
 void Scene::initialize()
@@ -123,6 +128,7 @@ T* Scene::addMeasureGraphicsItem()
     auto item = new T();
 
     addItem(item);
+    m_items.push_back(item);
     item->initialize();
 
     return item;

@@ -25,6 +25,7 @@ private:
     std::array<MeasureSimpleLineItem*, 2> m_referenceVLinesItem;
     std::array<MeasureSimpleLineItem*, 2> m_referenceHLinesItem;
     std::array<MeasureSimpleLineItem*, 4> m_fixedLinesItem;
+    QVector<MeasureGraphicsItem*> m_items;
 
 private:
     void initialize();

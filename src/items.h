@@ -28,6 +28,11 @@ protected:
     virtual void applyPen(const QPen& pen) = 0;
     virtual void applyFont(const QFont& fnt) = 0;
     virtual void applyBgColor(const QColor& color) = 0;
+    void setTextValue(
+            QGraphicsTextItem* item,
+            float value,
+            const QPointF& point,
+            bool isHeightValue);
 };
 
 class MeasureLineItem : public MeasureGraphicsItem

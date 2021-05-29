@@ -36,6 +36,34 @@ void MeasureGraphicsItem::setBgColor(const QColor& color)
     applyBgColor(m_bgColor);
 }
 
+void MeasureGraphicsItem:: setTextValue(
+        QGraphicsTextItem* item,
+        float value,
+        const QPointF& point,
+        bool isHeightValue)
+{
+    QString format = QString("<div style='background:%1; color:%2;'>%3</div>");
+    item->setHtml(format.arg(m_bgColor.name()).arg(m_pen.color().name()).arg(value));
+
+    auto view = item->scene()->views().empty() ? nullptr : item->scene()->views()[0];
+    auto th = item->boundingRect().height() / (view ? view->transform().m22() : 1 );
+    auto tw = item->boundingRect().width() / (view ? view->transform().m11() : 1 );
+    auto x = isHeightValue ? point.x() - tw / 2 : point.x();
+    auto y = isHeightValue ? point.y() - th : point.y() - th / 2;
+
+    if (view)
+    {
+        auto tl = view->mapToScene(view->viewport()->rect().topLeft());
+        auto br = view->mapToScene(view->viewport()->rect().bottomRight());
+
+        if (x < tl.x()) x = tl.x();
+        if (x > br.x() - tw) x = br.x() - tw;
+        if (y < tl.y()) y = tl.y();
+        if (y > br.y() - th) y = br.y() - th;
+    }
+    item->setPos({x, y});
+};
+
 MeasureLineItem::MeasureLineItem(QGraphicsItem* parent)
     : MeasureLineItem(true, true, parent)
 {
@@ -151,15 +179,11 @@ void MeasureLineItem::applyBgColor(const QColor& color)
 
 void MeasureLineItem::updateText()
 {
-    auto line = m_line->line();
-    QString format = QString("<div style='background:%1; color:%2;'>%3</div>");
-    m_text->setHtml(format.arg(m_bgColor.name()).arg(m_pen.color().name()).arg(line.length() + 1));
-
-    auto view = scene()->views().empty() ? nullptr : scene()->views()[0];
-    auto textWidth = m_text->boundingRect().width() / (view ? view->transform().m11() : 1 );
-    auto textHeight = m_text->boundingRect().height() / (view ? view->transform().m22() : 1 );
-
-    m_text->setPos({line.center().x() - textWidth / 2, line.center().y() - textHeight / 2});
+    if (m_isTextPresent)
+    {
+        auto line = m_line->line();
+        setTextValue(m_text, line.length() + 1, {line.center().x(), line.center().y()}, line.dy() != 0);
+    }
 }
 
 MeasureRectItem::MeasureRectItem(QGraphicsItem* parent)
@@ -217,21 +241,8 @@ void MeasureRectItem::applyBgColor(const QColor& color)
 void MeasureRectItem::updateText()
 {
     auto rect = m_rect->rect();
-    auto w = rect.width();
-    auto h = rect.height();
-    QFontMetrics fm(m_hText->font());
-
-    QString format = QString("<div style='background:%1; color:%2;'>%3</div>");
-    m_wText->setHtml(format.arg(m_bgColor.name()).arg(m_pen.color().name()).arg(w + 1));
-    m_hText->setHtml(format.arg(m_bgColor.name()).arg(m_pen.color().name()).arg(h + 1));
-
-    auto view = scene()->views().empty() ? nullptr : scene()->views()[0];
-    auto wTextWidth = m_wText->boundingRect().width() / (view ? view->transform().m11() : 1 );
-    auto hTextWidth = m_hText->boundingRect().width() / (view ? view->transform().m11() : 1 );
-    auto textHeight = m_hText->boundingRect().height() / (view ? view->transform().m22() : 1 );
-
-    m_wText->setPos({rect.center().x() - wTextWidth / 2, rect.top() - textHeight});
-    m_hText->setPos({rect.right(), rect.center().y() - textHeight / 2});
+    setTextValue(m_wText, rect.width() + 1, {rect.center().x(), rect.top()}, true);
+    setTextValue(m_hText, rect.height() + 1, {rect.right(), rect.center().y()}, false);
 }
 
 void MeasureRectItem::applyPen(const QPen& pen)
