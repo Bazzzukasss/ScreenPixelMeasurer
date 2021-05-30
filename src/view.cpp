@@ -16,12 +16,6 @@ void View::mousePressEvent(QMouseEvent* event)
     event->accept();
 }
 
-void View::mouseReleaseEvent(QMouseEvent *event)
-{
-    emit mouseReleaseed(event);
-    event->accept();
-}
-
 void View::mouseMoveEvent(QMouseEvent *event)
 {
     emit mouseMoved(event);

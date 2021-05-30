@@ -13,6 +13,7 @@ public:
     virtual ~MeasureGraphicsItem() = default;
 
     virtual void initialize() = 0;
+    virtual void setItemsVisible(bool isVisible) = 0;
 
     void setPenStyle(Qt::PenStyle style);
     void setFontSize(const float size);
@@ -43,6 +44,7 @@ public:
 
     void setLine(const QLineF& line);
     void initialize() override;
+    void setItemsVisible(bool isVisible) override;
 
 protected:
     void applyPen(const QPen& pen) override;
@@ -73,6 +75,7 @@ public:
 
     void setRect(const QRectF& rect);
     void initialize() override;
+    void setItemsVisible(bool isVisible) override;
 
 protected:
     void applyPen(const QPen& pen) override;

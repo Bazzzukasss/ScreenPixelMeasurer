@@ -45,7 +45,6 @@ public:
 protected:
     void enterEvent(QEvent* event) override;
     void leaveEvent(QEvent* event) override;
-    void resizeEvent(QResizeEvent *event) override;
 
 private:
     RenderData m_renderData;
@@ -59,19 +58,15 @@ private:
     void initialize();
     void grabScreen();
     void setFixedRectangle();
-    void clearFixedRectangle();
     void changeScale(const QPoint& delta);
     void switchPalette();
-    void adjust(int dx, int dy);
     void calculate();
     int beamTo(int startPos, int endPos, int coord, int step,
                Qt::Orientation orientation, const QRgb& color);
 private:
     void onMouseMove(QMouseEvent* event);
     void onMousePress(QMouseEvent* event);
-    void onMouseRelease(QMouseEvent* event);
     void onMouseScroll(QWheelEvent* event);
-
 };
 
 #endif // MAINWINDOW_H

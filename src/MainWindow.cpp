@@ -12,8 +12,6 @@
 #include "scene.h"
 #include "view.h"
 
-//#define DRAG_ENABLED
-
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent)
 {
@@ -34,10 +32,6 @@ MainWindow::MainWindow(QWidget* parent) :
 
 void MainWindow::initialize()
 {
-    m_renderData.scale = kMinScale;
-    m_renderData.isMeasurerRectPresent = false;
-    m_renderData.isFixedRectVisible = false;
-
     auto shortcut = new QShortcut(QKeySequence(Qt::Key_P), this);
     connect(shortcut, &QShortcut::activated, this, [&](){
         switchPalette();
@@ -46,6 +40,7 @@ void MainWindow::initialize()
 
     m_scene = new Scene(this);
     m_scene->setPalette(m_palettes[m_paletteIndex]);
+    m_scene->setRenderData(m_renderData);
 
     m_view = new View(this);
     m_view->setScene(m_scene);
@@ -60,27 +55,27 @@ void MainWindow::initialize()
 
     connect(m_view, &View::mouseMoved, this, &MainWindow::onMouseMove);
     connect(m_view, &View::mousePressed, this, &MainWindow::onMousePress);
-    connect(m_view, &View::mouseReleaseed, this, &MainWindow::onMouseRelease);
     connect(m_view, &View::mouseScrolled, this, &MainWindow::onMouseScroll);
 }
 
 void MainWindow::enterEvent(QEvent* event)
 {
     static bool isFirstEnter{true};
+
     grabScreen();
-    m_view->show();
 #ifdef Q_OS_WIN
     setWindowOpacity(1);
 #endif
     if (!isFirstEnter)
     {
-        adjust(m_lastWindowPos.x() - pos().x(),
-               m_lastWindowPos.y() - pos().y());
+        m_renderData.fixedRectangle.translate(m_lastWindowPos.x() - pos().x(),
+                                              m_lastWindowPos.y() - pos().y());
     }
 
     isFirstEnter = false;
 
     m_scene->setRenderData(m_renderData);
+    m_view->show();
 
     event->accept();
 }
@@ -92,7 +87,6 @@ void MainWindow::leaveEvent(QEvent* event)
 #endif
     m_view->hide();
     m_lastWindowPos = pos();
-    m_scene->setRenderData(m_renderData);
 
     event->accept();
 }
@@ -100,8 +94,9 @@ void MainWindow::leaveEvent(QEvent* event)
 void MainWindow::onMouseMove(QMouseEvent* event)
 {
     m_renderData.cursorPoint = m_view->mapToScene(event->x(), event->y()).toPoint();
-
+    m_renderData.isCursorRectPresent = true;
     calculate();
+    m_scene->setRenderData(m_renderData);
 
     if (event->buttons() & Qt::RightButton)
     {
@@ -116,8 +111,6 @@ void MainWindow::onMouseMove(QMouseEvent* event)
 
         m_lastMousePos = {event->x(), event->y()};
     }
-
-    m_scene->setRenderData(m_renderData);
 
     event->accept();
 }
@@ -154,37 +147,17 @@ void MainWindow::onMouseScroll(QWheelEvent* event)
 
 void MainWindow::onMousePress(QMouseEvent* event)
 {
-    if (event->button() == Qt::LeftButton)
-    {
-        if (m_renderData.fixedRectangle != m_renderData.cursorRectangle)
-        {
-            setFixedRectangle();
-        }
-        else
-        {
-            clearFixedRectangle();
-        }
-    }
-
     m_lastMousePos = {event->x(), event->y()};
 
+    if (event->button() == Qt::LeftButton)
+    {
+        setFixedRectangle();
+    }
+
     calculate();
-
     m_scene->setRenderData(m_renderData);
 
     event->accept();
-}
-
-void MainWindow::onMouseRelease(QMouseEvent* event)
-{
-    m_scene->setRenderData(m_renderData);
-
-    event->accept();
-}
-
-void MainWindow::resizeEvent(QResizeEvent*)
-{
-    m_renderData.windowRectangle = rect();
 }
 
 void MainWindow::grabScreen()
@@ -196,117 +169,136 @@ void MainWindow::grabScreen()
 
 void MainWindow::setFixedRectangle()
 {
-    m_renderData.fixedRectangle = m_renderData.cursorRectangle;
-    m_renderData.isFixedRectVisible = true;
-}
+    m_renderData.isFixedRectPresent =
+            m_renderData.fixedRectangle != m_renderData.cursorRectangle;
 
-void MainWindow::clearFixedRectangle()
-{
-    m_renderData.fixedRectangle = {0, 0, 0, 0};
-    m_renderData.isFixedRectVisible = false;
+    if (m_renderData.isFixedRectPresent)
+    {
+        m_renderData.fixedRectangle = m_renderData.cursorRectangle;
+    }
 }
 
 void MainWindow::calculate()
 {
-    auto x = m_renderData.cursorPoint.x();
-    auto y = m_renderData.cursorPoint.y();
-    auto w = m_renderData.screenImage.width();
-    auto h = m_renderData.screenImage.height();
-    auto color = m_renderData.screenImage.toImage().pixel(x, y);
+    int x, y, w, h, cr, cl, cb, ct;
 
-    auto cr = beamTo(x, w - 1, y, 1, Qt::Horizontal, color);
-    auto cl = beamTo(x, 0, y, -1, Qt::Horizontal, color);
-    auto cb = beamTo(y, h - 1, x, 1, Qt::Vertical, color);
-    auto ct = beamTo(y, 0, x, -1, Qt::Vertical, color);
-
-    int fl, ft, fb, fr;
-    int wl, wt, wb, wr;
-    m_renderData.fixedRectangle.getCoords(&fl, &ft, &fr, &fb);
-    m_renderData.windowRectangle.getCoords(&wl, &wt, &wr, &wb);
-    //m_renderData.scaledRectangle = {m_renderData.scaleShiftX, m_renderData.scaleShiftY,
-    //                               rect().width() / m_renderData.scale - 1, rect().height() / m_renderData.scale - 1};
-
-
-    m_renderData.fixedLines[0] = {wl, ft, wr, ft};
-    m_renderData.fixedLines[1] = {wl, fb + 1, wr, fb + 1};
-    m_renderData.fixedLines[2] = {fl, wt, fl, wb};
-    m_renderData.fixedLines[3] = {fr + 1, wt, fr + 1, wb};
-
-    m_renderData.cursorHLine = {cl, y, cr, y};
-    m_renderData.cursorVLine = {x, ct, x, cb};
-    m_renderData.cursorRectangle = {cl, ct, cr - cl, cb - ct};
-
-    auto ccx = m_renderData.cursorRectangle.center().x();
-    auto ccy = m_renderData.cursorRectangle.center().y();
-    auto fcx = m_renderData.fixedRectangle.center().x();
-    auto fcy = m_renderData.fixedRectangle.center().y();
-    int hx1{0},hx2{0},hy1{0},hy2{0};
-    int vx1{0},vx2{0},vy1{0},vy2{0};
-
-    if (m_renderData.cursorRectangle == m_renderData.fixedRectangle)
+    if (m_renderData.isCursorRectPresent)
     {
+        x = m_renderData.cursorPoint.x();
+        y = m_renderData.cursorPoint.y();
+        w = m_renderData.screenImage.width();
+        h = m_renderData.screenImage.height();
+
+        auto color = m_renderData.screenImage.toImage().pixel(x, y);
+
+        cr = beamTo(x, w - 1, y, 1, Qt::Horizontal, color);
+        cl = beamTo(x, 0, y, -1, Qt::Horizontal, color);
+        cb = beamTo(y, h - 1, x, 1, Qt::Vertical, color);
+        ct = beamTo(y, 0, x, -1, Qt::Vertical, color);
+
+        m_renderData.cursorHLine = {cl, y, cr, y};
+        m_renderData.cursorVLine = {x, ct, x, cb};
+        m_renderData.cursorRectangle = {cl, ct, cr - cl, cb - ct};
     }
     else
     {
-        if (m_renderData.cursorRectangle.contains(m_renderData.fixedRectangle))
+        m_renderData.cursorHLine = {1,1,1,1};
+        m_renderData.cursorVLine = {1,1,1,1};
+        m_renderData.cursorRectangle = {1,1,0,0};
+    }
+
+    if (m_renderData.isFixedRectPresent && m_renderData.isCursorRectPresent)
+    {
+        int fl, ft, fb, fr;
+        m_renderData.fixedRectangle.getCoords(&fl, &ft, &fr, &fb);
+
+        m_renderData.fixedLines[0] = {1, ft, w - 1, ft};
+        m_renderData.fixedLines[1] = {1, fb + 1, w - 1, fb + 1};
+        m_renderData.fixedLines[2] = {fl, 1, fl, h - 1};
+        m_renderData.fixedLines[3] = {fr + 1, 1, fr + 1, h - 1};
+
+        auto ccx = m_renderData.cursorRectangle.center().x();
+        auto ccy = m_renderData.cursorRectangle.center().y();
+        auto fcx = m_renderData.fixedRectangle.center().x();
+        auto fcy = m_renderData.fixedRectangle.center().y();
+        int hx1{1},hx2{1},hy1{1},hy2{1};
+        int vx1{1},vx2{1},vy1{1},vy2{1};
+
+        if (m_renderData.cursorRectangle == m_renderData.fixedRectangle)
         {
-            hx2 = fl - 1;   hy2 = fcy;      hx1 = cl;   hy1 = fcy;
-            vx2 = fcx;      vy2= ft - 1;    vx1 = fcx;  vy1 = ct;
-        }
-        else if (m_renderData.fixedRectangle.contains(m_renderData.cursorRectangle))
-        {
-            hx2 = cl - 1;   hy2 = ccy;      hx1 =fl;    hy1 = ccy;
-            vx2 = ccx;      vy2 = ct - 1;   vx1 = ccx;  vy1 = ft;
         }
         else
         {
-            vx1 = vx2 = ccx;
-            hy1 = hy2 = ccy;
-
-            if (cb < ft)
+            if (m_renderData.cursorRectangle.contains(m_renderData.fixedRectangle))
             {
-                vy1 = cb + 1; vy2 = ft - 1;
+                hx2 = fl - 1;   hy2 = fcy;      hx1 = cl;   hy1 = fcy;
+                vx2 = fcx;      vy2= ft - 1;    vx1 = fcx;  vy1 = ct;
             }
-            else if (ct > fb)
+            else if (m_renderData.fixedRectangle.contains(m_renderData.cursorRectangle))
             {
-                vy1 = fb + 2; vy2 = ct - 1;
-            }
-            else
-            {
-                if (ct < ft)
-                {
-                    vy1 = ct; vy2 = ft - 1;
-                }
-                else if (ct > ft)
-                {
-                     vy1 = ft; vy2 = ct - 1;
-                }
-            }
-
-            if (cr < fl)
-            {
-                hx1 = cr + 1; hx2 = fl - 1;
-            }
-            else if (cl > fr)
-            {
-                hx1 = fr + 2; hx2 = cl - 1;
+                hx2 = cl - 1;   hy2 = ccy;      hx1 =fl;    hy1 = ccy;
+                vx2 = ccx;      vy2 = ct - 1;   vx1 = ccx;  vy1 = ft;
             }
             else
             {
-                if (cl < fl)
+                vx1 = vx2 = ccx;
+                hy1 = hy2 = ccy;
+
+                if (cb < ft)
                 {
-                    hx1 = cl;  hx2 = fl - 1;
+                    vy1 = cb + 1; vy2 = ft - 1;
                 }
-                else if (cl > fl)
+                else if (ct > fb)
                 {
-                    hx1 = fl; hx2 = cl - 1;
+                    vy1 = fb + 2; vy2 = ct - 1;
+                }
+                else
+                {
+                    if (ct < ft)
+                    {
+                        vy1 = ct; vy2 = ft - 1;
+                    }
+                    else if (ct > ft)
+                    {
+                         vy1 = ft; vy2 = ct - 1;
+                    }
+                }
+
+                if (cr < fl)
+                {
+                    hx1 = cr + 1; hx2 = fl - 1;
+                }
+                else if (cl > fr)
+                {
+                    hx1 = fr + 2; hx2 = cl - 1;
+                }
+                else
+                {
+                    if (cl < fl)
+                    {
+                        hx1 = cl;  hx2 = fl - 1;
+                    }
+                    else if (cl > fl)
+                    {
+                        hx1 = fl; hx2 = cl - 1;
+                    }
                 }
             }
         }
-    }
 
-    m_renderData.measureVLine = {vx1, vy1, vx2, vy2};
-    m_renderData.measureHLine = {hx1, hy1, hx2, hy2};
+        m_renderData.measureVLine = {vx1, vy1, vx2, vy2};
+        m_renderData.measureHLine = {hx1, hy1, hx2, hy2};
+    }
+    else
+    {
+        m_renderData.fixedRectangle = {1,1,0,0};
+        for (auto& line : m_renderData.fixedLines)
+        {
+            line = {1,1,1,1};
+        }
+        m_renderData.measureVLine = {1,1,1,1};
+        m_renderData.measureHLine = {1,1,1,1};
+    }
 }
 
 int MainWindow::beamTo(int startPos, int endPos, int coord, int step,
@@ -354,9 +346,3 @@ void MainWindow::switchPalette()
     }
     m_scene->setPalette(m_palettes[m_paletteIndex]);
 }
-
-void MainWindow::adjust(int dx, int dy)
-{
-    m_renderData.fixedRectangle.translate(dx, dy);
-}
-

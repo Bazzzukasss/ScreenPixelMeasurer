@@ -12,28 +12,23 @@ Scene::Scene(QObject* parent)
 
 void Scene::setRenderData(const RenderData& renderData)
 {
+    setVisibility(renderData);
+
     m_screenImageItem->setPixmap(renderData.screenImage);
 
     m_cursorHLineItem->setLine(toFloat(renderData.cursorHLine));
     m_cursorVLineItem->setLine(toFloat(renderData.cursorVLine));
+    m_cursorRectangleItem->setRect(toFloat(renderData.cursorRectangle));
 
+    m_fixedRectangleItem->setRect(toFloat(renderData.fixedRectangle));
     m_measureHLineItem->setLine(toFloat(renderData.measureHLine));
     m_measureVLineItem->setLine(toFloat(renderData.measureVLine));
-
-    m_cursorRectangleItem->setRect(toFloat(renderData.cursorRectangle));
-    m_fixedRectangleItem->setRect(toFloat(renderData.fixedRectangle));
-
     for(auto i = 0; i < m_fixedLinesItem.size(); ++i)
     {
         m_fixedLinesItem[i]->setLine(toFloat(renderData.fixedLines[i]));
     }
 
-    //m_referenceVLinesItem[0] = addLine(toFloat(QLine{}));
-    //m_referenceVLinesItem[1] = addLine(toFloat(QLine{}));
-    //m_referenceHLinesItem[0] = addLine(toFloat(QLine{}));
-    //m_referenceHLinesItem[1] = addLine(toFloat(QLine{}));
-
-    setVisibility(renderData);
+    setSceneRect(itemsBoundingRect());
 }
 
 void Scene::setPalette(const Palette& palette)
@@ -46,11 +41,6 @@ void Scene::setPalette(const Palette& palette)
 
     m_cursorRectangleItem->setColor(palette.cursorRectangle);
     m_fixedRectangleItem->setColor(palette.fixedRectangle);
-
-    //m_referenceVLinesItem[0]->setColor(palette.measurerLines);
-    //m_referenceVLinesItem[1]->setColor(palette.measurerLines);
-    //m_referenceHLinesItem[0]->setColor(palette.measurerLines);
-    //m_referenceHLinesItem[1]->setColor(palette.measurerLines);
 
     for (auto lineItem : m_fixedLinesItem)
     {
@@ -66,15 +56,9 @@ void Scene::setPalette(const Palette& palette)
 void Scene::initialize()
 {
     m_screenImageItem = addPixmap({});
-    m_screenImageItem->setPos(0, 0);
 
     m_cursorHLineItem = addMeasureGraphicsItem<MeasureSimpleLineItem>();
     m_cursorVLineItem = addMeasureGraphicsItem<MeasureSimpleLineItem>();
-
-    //m_referenceVLinesItem[0] = addMeasureGraphicsItem<MeasureSimpleLineItem>();
-    //m_referenceVLinesItem[1] = addMeasureGraphicsItem<MeasureSimpleLineItem>();
-    //m_referenceHLinesItem[0] = addMeasureGraphicsItem<MeasureSimpleLineItem>();
-    //m_referenceHLinesItem[1] = addMeasureGraphicsItem<MeasureSimpleLineItem>();
 
     for (auto& lineItem : m_fixedLinesItem)
     {
@@ -92,33 +76,30 @@ void Scene::initialize()
     m_measureVLineItem->setPenStyle(Qt::PenStyle::DotLine);
 
     hideAll();
+    setSceneRect(itemsBoundingRect());
 }
 
 void Scene::hideAll()
 {
-    for(auto item : items())
+    for (auto item : m_items)
     {
-        item->setVisible(false);
+        item->setItemsVisible(false);
     }
 }
 
 void Scene::setVisibility(const RenderData& renderData)
 {
     m_screenImageItem->setVisible(true);
-    m_cursorHLineItem->setVisible(true);
-    m_cursorVLineItem->setVisible(true);
-    m_cursorRectangleItem->setVisible(true);
-    m_measureHLineItem->setVisible(renderData.isFixedRectVisible);
-    m_measureVLineItem->setVisible(renderData.isFixedRectVisible);
-    m_fixedRectangleItem->setVisible(renderData.isFixedRectVisible);
-    //m_referenceVLinesItem[0]->setVisible(renderData.isMeasurerRectPresent);
-    //m_referenceVLinesItem[1]->setVisible(renderData.isMeasurerRectPresent);
-    //m_referenceHLinesItem[0]->setVisible(renderData.isMeasurerRectPresent);
-    //m_referenceHLinesItem[1]->setVisible(renderData.isMeasurerRectPresent);
+    m_cursorHLineItem->setItemsVisible(renderData.isCursorRectPresent);
+    m_cursorVLineItem->setItemsVisible(renderData.isCursorRectPresent);
+    m_cursorRectangleItem->setItemsVisible(renderData.isCursorRectPresent);
+    m_measureHLineItem->setItemsVisible(renderData.isFixedRectPresent);
+    m_measureVLineItem->setItemsVisible(renderData.isFixedRectPresent);
+    m_fixedRectangleItem->setItemsVisible(renderData.isFixedRectPresent);
 
     for(auto i = 0; i < m_fixedLinesItem.size(); ++i)
     {
-        m_fixedLinesItem[i]->setVisible(renderData.isFixedRectVisible);
+        m_fixedLinesItem[i]->setItemsVisible(renderData.isFixedRectPresent);
     }
 }
 

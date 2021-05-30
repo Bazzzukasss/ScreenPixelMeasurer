@@ -103,11 +103,27 @@ void MeasureLineItem::initialize()
     }
 }
 
+void MeasureLineItem::setItemsVisible(bool isVisible)
+{
+    setVisible(isVisible);
+    m_line->setVisible(isVisible);
+    if (m_isTicksPresent)
+    {
+        for (auto& tick : m_ticks)
+        {
+            tick->setVisible(isVisible);
+        }
+    }
+
+    if (m_isTextPresent)
+    {
+        m_text->setVisible(isVisible);
+    }
+}
+
 void MeasureLineItem::setLine(const QLineF& line)
 {
     auto visible = (line.dx() > 0) || (line.dy() > 0);
-
-    setVisible(visible);
 
     m_line->setVisible(visible);
     m_line->setLine(line);
@@ -210,20 +226,18 @@ void MeasureRectItem::initialize()
     addToGroup(m_wText);
 }
 
-void MeasureRectItem::setRect(const QRectF& rect)
+void MeasureRectItem::setItemsVisible(bool isVisible)
 {
-    bool isVisible = (rect.height() != 0) && (rect.width() != 0);
-
     setVisible(isVisible);
     m_rect->setVisible(isVisible);
     m_hText->setVisible(isVisible);
     m_wText->setVisible(isVisible);
+}
 
-    if (isVisible)
-    {
-        m_rect->setRect(rect);        
-        updateText();
-    }
+void MeasureRectItem::setRect(const QRectF& rect)
+{
+    m_rect->setRect(rect);
+    updateText();
 }
 
 void MeasureRectItem::applyFont(const QFont& fnt)

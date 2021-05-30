@@ -23,14 +23,13 @@ struct RenderData{
     QLine measureHLine;
     QLine measureVLine;
     QRect cursorRectangle;
-    QRect windowRectangle;
     QRect fixedRectangle;
-    QRect scaledRectangle;
     QRect measureRectangle;
     std::array<QLine, 4> fixedLines;
-    int scale;
-    bool isMeasurerRectPresent;
-    bool isFixedRectVisible;
+    int scale{1};
+    bool isMeasurerRectPresent{false};
+    bool isCursorRectPresent{false};
+    bool isFixedRectPresent{false};
 };
 
 #endif // DATA_H
