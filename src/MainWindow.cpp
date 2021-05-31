@@ -42,8 +42,7 @@ void MainWindow::initialize()
     m_scene->setPalette(m_palettes[m_paletteIndex]);
     m_scene->setRenderData(m_renderData);
 
-    m_view = new View(this);
-    m_view->setScene(m_scene);
+    m_view = new View(m_scene, this);
 
     auto layout = new QVBoxLayout();
     layout->addWidget(m_view);
@@ -56,6 +55,7 @@ void MainWindow::initialize()
     connect(m_view, &View::mouseMoved, this, &MainWindow::onMouseMove);
     connect(m_view, &View::mousePressed, this, &MainWindow::onMousePress);
     connect(m_view, &View::mouseScrolled, this, &MainWindow::onMouseScroll);
+    connect(m_scene, &Scene::fixedRectanglChanged, this, &MainWindow::correctFixedRectangle);
 }
 
 void MainWindow::enterEvent(QEvent* event)
@@ -112,6 +112,7 @@ void MainWindow::onMouseMove(QMouseEvent* event)
         m_lastMousePos = {event->x(), event->y()};
     }
 
+    m_view->update();
     event->accept();
 }
 
@@ -176,6 +177,14 @@ void MainWindow::setFixedRectangle()
     {
         m_renderData.fixedRectangle = m_renderData.cursorRectangle;
     }
+}
+
+void MainWindow::correctFixedRectangle(const QRect& rect)
+{
+    m_renderData.fixedRectangle = rect;
+    calculate();
+    m_scene->setRenderData(m_renderData);
+    m_view->update();
 }
 
 void MainWindow::calculate()
@@ -292,10 +301,10 @@ void MainWindow::calculate()
     else
     {
         m_renderData.fixedRectangle = {1,1,0,0};
-        for (auto& line : m_renderData.fixedLines)
-        {
-            line = {1,1,1,1};
-        }
+        m_renderData.fixedLines[0] = {1,1,1,1};
+        m_renderData.fixedLines[1] = {1,1,1,1};
+        m_renderData.fixedLines[2] = {1,1,1,1};
+        m_renderData.fixedLines[3] = {1,1,1,1};
         m_renderData.measureVLine = {1,1,1,1};
         m_renderData.measureHLine = {1,1,1,1};
     }

@@ -8,11 +8,17 @@
 
 class Scene : public QGraphicsScene
 {
+    Q_OBJECT
+
 public:
     Scene(QObject* parent = nullptr);
 
     void setRenderData(const RenderData& renderData);
     void setPalette(const Palette& palette);
+    bool isHoveredItemPresent();
+
+signals:
+    void fixedRectanglChanged(const QRect& rect);
 
 private:
     QGraphicsPixmapItem* m_screenImageItem;
@@ -22,10 +28,10 @@ private:
     MeasureLineItem* m_measureVLineItem;
     MeasureRectItem* m_cursorRectangleItem;
     MeasureRectItem* m_fixedRectangleItem;
-    std::array<MeasureSimpleLineItem*, 2> m_referenceVLinesItem;
-    std::array<MeasureSimpleLineItem*, 2> m_referenceHLinesItem;
     std::array<MeasureSimpleLineItem*, 4> m_fixedLinesItem;
     QVector<MeasureGraphicsItem*> m_items;
+    QRect m_originalFixedRectangle;
+    QRect m_currentFixedRectangle;
 
 private:
     void initialize();

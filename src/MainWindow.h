@@ -67,6 +67,7 @@ private:
     void onMouseMove(QMouseEvent* event);
     void onMousePress(QMouseEvent* event);
     void onMouseScroll(QWheelEvent* event);
+    void correctFixedRectangle(const QRect &rect);
 };
 
 #endif // MAINWINDOW_H

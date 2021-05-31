@@ -23,10 +23,14 @@ void Scene::setRenderData(const RenderData& renderData)
     m_fixedRectangleItem->setRect(toFloat(renderData.fixedRectangle));
     m_measureHLineItem->setLine(toFloat(renderData.measureHLine));
     m_measureVLineItem->setLine(toFloat(renderData.measureVLine));
-    for(auto i = 0; i < m_fixedLinesItem.size(); ++i)
+
+    int i{0};
+    for (auto& fixedLineItem : m_fixedLinesItem)
     {
-        m_fixedLinesItem[i]->setLine(toFloat(renderData.fixedLines[i]));
+        fixedLineItem->setLine(toFloat(renderData.fixedLines[i++]));
     }
+
+    m_currentFixedRectangle = renderData.fixedRectangle;
 
     setSceneRect(itemsBoundingRect());
 }
@@ -42,9 +46,9 @@ void Scene::setPalette(const Palette& palette)
     m_cursorRectangleItem->setColor(palette.cursorRectangle);
     m_fixedRectangleItem->setColor(palette.fixedRectangle);
 
-    for (auto lineItem : m_fixedLinesItem)
+    for (auto& fixedLineItem : m_fixedLinesItem)
     {
-        lineItem->setColor(palette.fixedLines);
+        fixedLineItem->setColor(palette.fixedLines);
     }
 
     for (auto item : m_items)
@@ -53,27 +57,85 @@ void Scene::setPalette(const Palette& palette)
     }
 }
 
+bool Scene::isHoveredItemPresent()
+{
+    for (auto item : m_items)
+    {
+        if (item->isHovered())
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void Scene::initialize()
 {
     m_screenImageItem = addPixmap({});
 
     m_cursorHLineItem = addMeasureGraphicsItem<MeasureSimpleLineItem>();
     m_cursorVLineItem = addMeasureGraphicsItem<MeasureSimpleLineItem>();
-
-    for (auto& lineItem : m_fixedLinesItem)
-    {
-        lineItem = addMeasureGraphicsItem<MeasureSimpleLineItem>();
-        lineItem->setPenStyle(Qt::PenStyle::DashLine);
-    }
-
     m_cursorRectangleItem = addMeasureGraphicsItem<MeasureRectItem>();
-    m_fixedRectangleItem = addMeasureGraphicsItem<MeasureRectItem>();
 
     m_measureHLineItem = addMeasureGraphicsItem<MeasureLineItem>();
     m_measureHLineItem->setPenStyle(Qt::PenStyle::DotLine);
 
     m_measureVLineItem = addMeasureGraphicsItem<MeasureLineItem>();
     m_measureVLineItem->setPenStyle(Qt::PenStyle::DotLine);
+
+    int i{0};
+    for (auto& fixedLineItem : m_fixedLinesItem)
+    {
+        if (i < 2)
+        {
+            fixedLineItem = addMeasureGraphicsItem<MeasureSimpleHorLineItem>();
+        }
+        else
+        {
+            fixedLineItem = addMeasureGraphicsItem<MeasureSimpleVertLineItem>();
+        }
+
+        fixedLineItem->setPenStyle(Qt::PenStyle::DashLine);
+        fixedLineItem->setItemsAcceptHoverEvents(true);
+        fixedLineItem->setItemsFlags(QGraphicsItem::ItemIsMovable);
+
+        connect(fixedLineItem, &MeasureGraphicsItem::dragStarted, this, [&](){
+            m_originalFixedRectangle = m_currentFixedRectangle;
+        });
+
+        connect(fixedLineItem, &MeasureGraphicsItem::dragFinished, this, [&](){
+
+        });
+
+        i++;
+    }
+
+    connect(m_fixedLinesItem[0], &MeasureGraphicsItem::positionChanged,
+            this, [&](const QPointF& point){
+        emit fixedRectanglChanged(
+                    m_originalFixedRectangle.adjusted(0, point.y(), 0, 0));
+    });
+
+    connect(m_fixedLinesItem[1], &MeasureGraphicsItem::positionChanged,
+            this, [&](const QPointF& point){
+        emit fixedRectanglChanged(
+                    m_originalFixedRectangle.adjusted(0, 0, 0, point.y()));
+    });
+
+    connect(m_fixedLinesItem[2], &MeasureGraphicsItem::positionChanged,
+            this, [&](const QPointF& point){
+        emit fixedRectanglChanged(
+                    m_originalFixedRectangle.adjusted(point.x(), 0, 0, 0));
+    });
+
+    connect(m_fixedLinesItem[3], &MeasureGraphicsItem::positionChanged,
+            this, [&](const QPointF& point){
+        emit fixedRectanglChanged(
+                    m_originalFixedRectangle.adjusted(0, 0, point.x(), 0));
+    });
+
+    m_fixedRectangleItem = addMeasureGraphicsItem<MeasureRectItem>();
 
     hideAll();
     setSceneRect(itemsBoundingRect());
@@ -97,9 +159,9 @@ void Scene::setVisibility(const RenderData& renderData)
     m_measureVLineItem->setItemsVisible(renderData.isFixedRectPresent);
     m_fixedRectangleItem->setItemsVisible(renderData.isFixedRectPresent);
 
-    for(auto i = 0; i < m_fixedLinesItem.size(); ++i)
+    for (auto& fixedLineItem : m_fixedLinesItem)
     {
-        m_fixedLinesItem[i]->setItemsVisible(renderData.isFixedRectPresent);
+        fixedLineItem->setItemsVisible(renderData.isFixedRectPresent);
     }
 }
 

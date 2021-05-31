@@ -2,13 +2,14 @@
 #define VIEW_H
 
 #include <QGraphicsView>
+#include "scene.h"
 
 class View : public QGraphicsView
 {
     Q_OBJECT
 
 public:
-    View(QWidget* parent = nullptr);
+    View(Scene* viewScene, QWidget* parent = nullptr);
 
 signals:
     void mouseMoved(QMouseEvent* event);
@@ -19,6 +20,9 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
+
+private:
+    Scene* m_scene;
 };
 
 #endif // VIEW_H

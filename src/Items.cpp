@@ -2,7 +2,8 @@
 #include <QFontMetrics>
 #include <QGraphicsScene>
 #include <QGraphicsView>
-
+#include <QDebug>
+#include <QGraphicsSceneMouseEvent>
 #include "items.h"
 
 MeasureGraphicsItem::MeasureGraphicsItem(QGraphicsItem* parent)
@@ -36,6 +37,17 @@ void MeasureGraphicsItem::setBgColor(const QColor& color)
     applyBgColor(m_bgColor);
 }
 
+bool MeasureGraphicsItem::isHovered() const
+{
+    return m_isHovered;
+}
+
+void MeasureGraphicsItem::changePosition(const QPointF &pos)
+{
+    setPos(mapToScene(pos - m_anchorPoint));
+}
+
+
 void MeasureGraphicsItem:: setTextValue(
         QGraphicsTextItem* item,
         float value,
@@ -62,7 +74,41 @@ void MeasureGraphicsItem:: setTextValue(
         if (y > br.y() - th) y = br.y() - th;
     }
     item->setPos({x, y});
-};
+}
+
+void MeasureGraphicsItem::hoverEnterEvent(QGraphicsSceneHoverEvent* )
+{
+    setCursor(Qt::ClosedHandCursor);
+    m_isHovered = true;
+}
+
+void MeasureGraphicsItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* )
+{
+    setCursor(Qt::ArrowCursor);
+    m_isHovered = false;
+}
+
+void MeasureGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    m_anchorPoint = mapToScene(event->pos());
+    emit dragStarted();
+}
+
+void MeasureGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+{
+    setPos(0, 0);
+    emit dragFinished();
+}
+
+void MeasureGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+{
+    if (flags() & QGraphicsItem::ItemIsMovable)
+    {
+        changePosition(event->pos());        
+        emit positionChanged(pos());
+        setPos(0, 0);
+    }
+}
 
 MeasureLineItem::MeasureLineItem(QGraphicsItem* parent)
     : MeasureLineItem(true, true, parent)
@@ -81,6 +127,7 @@ void MeasureLineItem::initialize()
     m_line = new QGraphicsLineItem(this);
     m_line->setZValue(0);
     m_line->setOpacity(0.5);
+
     addToGroup(m_line);
 
     if (m_isTicksPresent)
@@ -99,6 +146,7 @@ void MeasureLineItem::initialize()
         m_text = new QGraphicsTextItem(this);
         m_text->setFlag(GraphicsItemFlag::ItemIgnoresTransformations);
         m_text->setZValue(1);
+        m_text->setAcceptHoverEvents(false);
         addToGroup(m_text);
     }
 }
@@ -119,6 +167,17 @@ void MeasureLineItem::setItemsVisible(bool isVisible)
     {
         m_text->setVisible(isVisible);
     }
+}
+
+void MeasureLineItem::setItemsFlags(QGraphicsItem::GraphicsItemFlags flags)
+{
+    setFlags(flags);
+    m_line->setFlags(flags);
+}
+
+void MeasureLineItem::setItemsAcceptHoverEvents(bool isAccept)
+{
+    m_line->setAcceptHoverEvents(isAccept);
 }
 
 void MeasureLineItem::setLine(const QLineF& line)
@@ -188,9 +247,14 @@ void MeasureLineItem::applyFont(const QFont& fnt)
     }
 }
 
-void MeasureLineItem::applyBgColor(const QColor& color)
+void MeasureLineItem::applyBgColor(const QColor& )
 {
     updateText();
+}
+
+QRectF MeasureLineItem::boundingRect() const
+{
+    return m_line->boundingRect();
 }
 
 void MeasureLineItem::updateText()
@@ -220,6 +284,8 @@ void MeasureRectItem::initialize()
     m_wText->setZValue(1);
     m_rect->setZValue(0);
     m_rect->setOpacity(0.8);
+    m_hText->setAcceptHoverEvents(false);
+    m_wText->setAcceptHoverEvents(false);
 
     addToGroup(m_rect);
     addToGroup(m_hText);
@@ -232,6 +298,17 @@ void MeasureRectItem::setItemsVisible(bool isVisible)
     m_rect->setVisible(isVisible);
     m_hText->setVisible(isVisible);
     m_wText->setVisible(isVisible);
+}
+
+void MeasureRectItem::setItemsFlags(QGraphicsItem::GraphicsItemFlags flags)
+{
+    setFlags(flags);
+    m_rect->setFlags(flags);
+}
+
+void MeasureRectItem::setItemsAcceptHoverEvents(bool isAccept)
+{
+    m_rect->setAcceptHoverEvents(isAccept);
 }
 
 void MeasureRectItem::setRect(const QRectF& rect)
@@ -247,9 +324,14 @@ void MeasureRectItem::applyFont(const QFont& fnt)
     updateText();
 }
 
-void MeasureRectItem::applyBgColor(const QColor& color)
+void MeasureRectItem::applyBgColor(const QColor& )
 {
     updateText();
+}
+
+QRectF MeasureRectItem::boundingRect() const
+{
+    return m_rect->rect();
 }
 
 void MeasureRectItem::updateText()
@@ -268,4 +350,26 @@ void MeasureRectItem::applyPen(const QPen& pen)
 MeasureSimpleLineItem::MeasureSimpleLineItem(QGraphicsItem* parent)
     : MeasureLineItem(false, false, parent)
 {
+}
+
+MeasureSimpleHorLineItem::MeasureSimpleHorLineItem(QGraphicsItem* parent)
+    : MeasureSimpleLineItem(parent)
+{
+}
+
+void MeasureSimpleHorLineItem::changePosition(const QPointF& pos)
+{
+    auto x = this->pos().x();
+    setPos(mapToScene(x, pos.y() - m_anchorPoint.y()));
+}
+
+MeasureSimpleVertLineItem::MeasureSimpleVertLineItem(QGraphicsItem *parent)
+    : MeasureSimpleLineItem(parent)
+{
+}
+
+void MeasureSimpleVertLineItem::changePosition(const QPointF& pos)
+{
+    auto y = this->pos().y();
+    setPos(mapToScene(pos.x() - m_anchorPoint.x(), y));
 }
