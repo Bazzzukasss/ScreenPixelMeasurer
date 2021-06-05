@@ -24,7 +24,6 @@ struct RenderData{
     QLine measureVLine;
     QRect cursorRectangle;
     QRect fixedRectangle;
-    QRect measureRectangle;
     std::array<QLine, 4> fixedLines;
     bool isMeasurerRectPresent{false};
     bool isCursorRectPresent{false};

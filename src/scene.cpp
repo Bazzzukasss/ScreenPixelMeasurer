@@ -1,7 +1,7 @@
 #include <QGraphicsRectItem>
 #include <QGraphicsLineItem>
 #include <QGraphicsPixmapItem>
-#include <QDebug>
+
 #include "scene.h"
 
 Scene::Scene(QObject* parent)
@@ -12,6 +12,9 @@ Scene::Scene(QObject* parent)
 
 void Scene::setRenderData(const RenderData& renderData)
 {
+    if (renderData.screenImage.isNull())
+        return;
+
     setVisibility(renderData);
 
     m_screenImageItem->setPixmap(renderData.screenImage);
