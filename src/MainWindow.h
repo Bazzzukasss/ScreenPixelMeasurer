@@ -54,6 +54,7 @@ private:
     QVector<Palette> m_palettes{kDarkPalette, kLightPalette};
     View* m_view;
     Scene* m_scene;
+    int m_scale{kMinScale};
 
     void initialize();
     void grabScreen();

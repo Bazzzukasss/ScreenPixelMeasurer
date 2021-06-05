@@ -135,7 +135,7 @@ void MainWindow::onMouseScroll(QWheelEvent* event)
     QPointF deltaViewportPos = targetViewportPos - QPointF(m_view->viewport()->width() / 2.0, m_view->viewport()->height() / 2.0);
 
     m_view->resetTransform();
-    m_view->scale(m_renderData.scale, m_renderData.scale);
+    m_view->scale(m_scale, m_scale);
     m_view->centerOn(targetScenePos);
 
     QPointF viewportCenter = m_view->mapFromScene(targetScenePos) - deltaViewportPos;
@@ -334,16 +334,16 @@ int MainWindow::beamTo(int startPos, int endPos, int coord, int step,
 
 void MainWindow::changeScale(const QPoint& delta)
 {
-    m_renderData.scale += delta.y() > 0 ? 1 : -1;
+    m_scale += delta.y() > 0 ? 1 : -1;
 
-    if (m_renderData.scale > kMaxScale)
+    if (m_scale > kMaxScale)
     {
-        m_renderData.scale = kMaxScale;
+        m_scale = kMaxScale;
     }
 
-    if (m_renderData.scale < kMinScale)
+    if (m_scale < kMinScale)
     {
-        m_renderData.scale = kMinScale;
+        m_scale = kMinScale;
     }
 }
 

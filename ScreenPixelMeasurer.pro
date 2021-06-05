@@ -9,6 +9,7 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    src/calculator.cpp \
     src/items.cpp \
     src/scene.cpp \
     src/MainWindow.cpp \
@@ -16,6 +17,7 @@ SOURCES += \
     src/view.cpp
 
 HEADERS += \
+    src/calculator.h \
     src/data.h \
     src/items.h \
     src/scene.h \
