@@ -73,11 +73,13 @@ void MeasureGraphicsItem:: setTextValue(
 void MeasureGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     m_anchorPoint = mapToScene(event->pos());
+    QGraphicsItemGroup::mousePressEvent(event);
 }
 
-void MeasureGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*)
+void MeasureGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     setPos(0, 0);
+    QGraphicsItemGroup::mouseReleaseEvent(event);
 }
 
 void MeasureGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
@@ -87,6 +89,10 @@ void MeasureGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
         changePosition(event->pos());        
         emit positionChanged(pos());
         setPos(0, 0);
+    }
+    else
+    {
+        QGraphicsItemGroup::mouseMoveEvent(event);
     }
 }
 

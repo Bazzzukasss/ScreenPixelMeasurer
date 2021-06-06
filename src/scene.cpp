@@ -65,10 +65,16 @@ void Scene::startDragging()
     m_originalFixedRectangle = m_currentFixedRectangle;
 }
 
-bool Scene::isDragableItemSelected(const QPoint& pos) const
+bool Scene::isMovableItemSelected(const QPoint& pos) const
 {
-    auto item = itemAt(pos, QTransform());
-    return item->flags() & QGraphicsItem::ItemIsMovable;
+    for (auto item : items(pos))
+    {
+        if (item->flags() & QGraphicsItem::ItemIsMovable)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 void Scene::initialize()
@@ -106,26 +112,38 @@ void Scene::initialize()
 
     connect(m_fixedLinesItem[0], &MeasureGraphicsItem::positionChanged,
             this, [&](const QPointF& point){
-        emit fixedRectanglChanged(
-                    m_originalFixedRectangle.adjusted(0, point.y(), 0, 0));
+        auto rect = m_originalFixedRectangle.adjusted(0, point.y(), 0, 0);
+        if (isRectangleValid(rect))
+        {
+            emit fixedRectanglChanged(rect);
+        }
     });
 
     connect(m_fixedLinesItem[1], &MeasureGraphicsItem::positionChanged,
             this, [&](const QPointF& point){
-        emit fixedRectanglChanged(
-                    m_originalFixedRectangle.adjusted(0, 0, 0, point.y()));
+        auto rect = m_originalFixedRectangle.adjusted(0, 0, 0, point.y());
+        if (isRectangleValid(rect))
+        {
+            emit fixedRectanglChanged(rect);
+        }
     });
 
     connect(m_fixedLinesItem[2], &MeasureGraphicsItem::positionChanged,
             this, [&](const QPointF& point){
-        emit fixedRectanglChanged(
-                    m_originalFixedRectangle.adjusted(point.x(), 0, 0, 0));
+        auto rect = m_originalFixedRectangle.adjusted(point.x(), 0, 0, 0);
+        if (isRectangleValid(rect))
+        {
+            emit fixedRectanglChanged(rect);
+        }
     });
 
     connect(m_fixedLinesItem[3], &MeasureGraphicsItem::positionChanged,
             this, [&](const QPointF& point){
-        emit fixedRectanglChanged(
-                    m_originalFixedRectangle.adjusted(0, 0, point.x(), 0));
+        auto rect = m_originalFixedRectangle.adjusted(0, 0, point.x(), 0);
+        if (isRectangleValid(rect))
+        {
+            emit fixedRectanglChanged(rect);
+        }
     });
 
     m_fixedRectangleItem = addMeasureGraphicsItem<MeasureRectItem>();
@@ -188,4 +206,10 @@ QLineF Scene::toFloat(const QLine& line)
     float y2 = line.y2() + 0.5;
 
     return QLineF{x1, y1, x2, y2};
+}
+
+bool Scene::isRectangleValid(QRect& rect)
+{
+    return (rect.left() <= rect.right()) &&
+           (rect.top() <= rect.bottom());
 }

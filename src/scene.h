@@ -16,7 +16,7 @@ public:
     void setRenderData(const RenderData& renderData);
     void setPalette(const Palette& palette);
     void startDragging();
-    bool isDragableItemSelected(const QPoint& pos) const;
+    bool isMovableItemSelected(const QPoint& pos) const;
 
 signals:
     void fixedRectanglChanged(const QRect& rect);
@@ -44,6 +44,7 @@ private:
 
     QRectF toFloat(const QRect& rectangle);
     QLineF toFloat(const QLine& line);
+    bool isRectangleValid(QRect& rect);
 };
 
 #endif // SCENE_H

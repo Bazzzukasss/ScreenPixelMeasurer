@@ -21,7 +21,7 @@ View::View(QWidget* parent)
 
 void View::mousePressEvent(QMouseEvent* event)
 {
-    m_isItemDragging = m_scene->isDragableItemSelected(mapToScene(event->pos()).toPoint());
+    m_isItemDragging = m_scene->isMovableItemSelected(mapToScene(event->pos()).toPoint());
     if (!m_isItemDragging)
     {
         m_lastMousePos = event->pos();
