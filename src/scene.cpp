@@ -60,17 +60,15 @@ void Scene::setPalette(const Palette& palette)
     }
 }
 
-bool Scene::isHoveredItemPresent()
+bool Scene::startDragging()
 {
-    for (auto item : m_items)
-    {
-        if (item->isHovered())
-        {
-            return true;
-        }
-    }
+    m_originalFixedRectangle = m_currentFixedRectangle;
+}
 
-    return false;
+bool Scene::isDragableItemSelected(const QPoint& pos) const
+{
+    auto item = itemAt(pos, QTransform());
+    return item->flags() & QGraphicsItem::ItemIsMovable;
 }
 
 void Scene::initialize()
@@ -101,16 +99,8 @@ void Scene::initialize()
 
         fixedLineItem->setPenStyle(Qt::PenStyle::DashLine);
         fixedLineItem->setItemsAcceptHoverEvents(true);
-        fixedLineItem->setItemsFlags(QGraphicsItem::ItemIsMovable);
-
-        connect(fixedLineItem, &MeasureGraphicsItem::dragStarted, this, [&](){
-            m_originalFixedRectangle = m_currentFixedRectangle;
-        });
-
-        connect(fixedLineItem, &MeasureGraphicsItem::dragFinished, this, [&](){
-
-        });
-
+        fixedLineItem->setItemsFlags(QGraphicsItem::ItemIsMovable |
+                                     QGraphicsItem::ItemIsSelectable);
         i++;
     }
 

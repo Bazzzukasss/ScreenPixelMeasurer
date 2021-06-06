@@ -37,16 +37,10 @@ void MeasureGraphicsItem::setBgColor(const QColor& color)
     applyBgColor(m_bgColor);
 }
 
-bool MeasureGraphicsItem::isHovered() const
-{
-    return m_isHovered;
-}
-
 void MeasureGraphicsItem::changePosition(const QPointF &pos)
 {
     setPos(mapToScene(pos - m_anchorPoint));
 }
-
 
 void MeasureGraphicsItem:: setTextValue(
         QGraphicsTextItem* item,
@@ -76,28 +70,14 @@ void MeasureGraphicsItem:: setTextValue(
     item->setPos({x, y});
 }
 
-void MeasureGraphicsItem::hoverEnterEvent(QGraphicsSceneHoverEvent* )
-{
-    setCursor(Qt::ClosedHandCursor);
-    m_isHovered = true;
-}
-
-void MeasureGraphicsItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* )
-{
-    setCursor(Qt::ArrowCursor);
-    m_isHovered = false;
-}
-
 void MeasureGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     m_anchorPoint = mapToScene(event->pos());
-    emit dragStarted();
 }
 
 void MeasureGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     setPos(0, 0);
-    emit dragFinished();
 }
 
 void MeasureGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
@@ -355,6 +335,7 @@ MeasureSimpleLineItem::MeasureSimpleLineItem(QGraphicsItem* parent)
 MeasureSimpleHorLineItem::MeasureSimpleHorLineItem(QGraphicsItem* parent)
     : MeasureSimpleLineItem(parent)
 {
+    setCursor(Qt::SizeVerCursor);
 }
 
 void MeasureSimpleHorLineItem::changePosition(const QPointF& pos)
@@ -363,13 +344,24 @@ void MeasureSimpleHorLineItem::changePosition(const QPointF& pos)
     setPos(mapToScene(x, pos.y() - m_anchorPoint.y()));
 }
 
+QRectF MeasureSimpleHorLineItem::boundingRect() const
+{
+    return m_line->boundingRect().adjusted(0, -1, 0, 1);
+}
+
 MeasureSimpleVertLineItem::MeasureSimpleVertLineItem(QGraphicsItem *parent)
     : MeasureSimpleLineItem(parent)
 {
+    setCursor(Qt::SizeHorCursor);
 }
 
 void MeasureSimpleVertLineItem::changePosition(const QPointF& pos)
 {
     auto y = this->pos().y();
     setPos(mapToScene(pos.x() - m_anchorPoint.x(), y));
+}
+
+QRectF MeasureSimpleVertLineItem::boundingRect() const
+{
+    return m_line->boundingRect().adjusted(-1, 0, 1, 0);
 }

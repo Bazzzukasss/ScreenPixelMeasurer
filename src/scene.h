@@ -15,7 +15,8 @@ public:
 
     void setRenderData(const RenderData& renderData);
     void setPalette(const Palette& palette);
-    bool isHoveredItemPresent();
+    bool startDragging();
+    bool isDragableItemSelected(const QPoint& pos) const;
 
 signals:
     void fixedRectanglChanged(const QRect& rect);
@@ -32,6 +33,7 @@ private:
     QVector<MeasureGraphicsItem*> m_items;
     QRect m_originalFixedRectangle;
     QRect m_currentFixedRectangle;
+    bool m_isDragging{false};
 
 private:
     void initialize();

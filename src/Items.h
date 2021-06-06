@@ -23,12 +23,9 @@ public:
     void setFontSize(const float size);
     void setColor(const QColor& color);
     void setBgColor(const QColor& color);
-    bool isHovered() const;
 
 signals:
     void positionChanged(const QPointF& pos);
-    void dragStarted();
-    void dragFinished();
 
 protected:
     virtual void applyPen(const QPen& pen) = 0;
@@ -41,8 +38,6 @@ protected:
             const QPointF& point,
             bool isHeightValue);
 
-    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
-    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
@@ -51,7 +46,6 @@ protected:
     QPen m_pen;
     QFont m_font;
     QColor m_bgColor;
-    bool m_isHovered{false};
     QPointF m_anchorPoint;
 };
 
@@ -97,6 +91,7 @@ public:
 
 protected:
     void changePosition(const QPointF& pos);
+    QRectF boundingRect() const override;
 };
 
 class MeasureSimpleVertLineItem : public MeasureSimpleLineItem
@@ -106,6 +101,7 @@ public:
 
 protected:
     void changePosition(const QPointF& pos);
+    QRectF boundingRect() const override;
 };
 
 class MeasureRectItem : public MeasureGraphicsItem

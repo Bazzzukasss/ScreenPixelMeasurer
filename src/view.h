@@ -42,6 +42,7 @@ public:
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
 
@@ -52,6 +53,7 @@ private:
     QVector<Palette> m_palettes{kDarkPalette, kLightPalette};
     int m_scale{kMinScale};
     int m_paletteIndex{0};
+    bool m_isItemDragging;
 
 private:
     void updateScene();
