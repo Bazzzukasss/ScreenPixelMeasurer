@@ -6,9 +6,9 @@
 #include <QVBoxLayout>
 #include <QTimer>
 
-#include "MainWindow.h"
+#include "window.h"
 
-MainWindow::MainWindow(QWidget* parent) :
+Window::Window(QWidget* parent) :
     QMainWindow(parent)
 {
     setFocusPolicy(Qt::StrongFocus);
@@ -26,7 +26,7 @@ MainWindow::MainWindow(QWidget* parent) :
     initialize();
 }
 
-void MainWindow::initialize()
+void Window::initialize()
 {
     m_view = new View(this);
     m_view->hide();
@@ -47,7 +47,7 @@ void MainWindow::initialize()
     });
 }
 
-void MainWindow::enterEvent(QEvent* event)
+void Window::enterEvent(QEvent*)
 {
     static bool isFirstEnter{true};
 
@@ -67,7 +67,7 @@ void MainWindow::enterEvent(QEvent* event)
 #endif
 }
 
-void MainWindow::leaveEvent(QEvent* event)
+void Window::leaveEvent(QEvent*)
 {
 #ifdef Q_OS_WIN
     setWindowOpacity(0.1);
@@ -76,7 +76,7 @@ void MainWindow::leaveEvent(QEvent* event)
     m_view->hide();
 }
 
-void MainWindow::grabScreen()
+void Window::grabScreen()
 {
     auto screen = QGuiApplication::primaryScreen();
     auto descktop = QApplication::desktop();

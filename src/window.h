@@ -4,12 +4,12 @@
 #include <QMainWindow>
 #include "view.h"
 
-class MainWindow : public QMainWindow
+class Window : public QMainWindow
 {
     Q_OBJECT    
 
 public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    explicit Window(QWidget* parent = nullptr);
 
 protected:
     void enterEvent(QEvent* event) override;

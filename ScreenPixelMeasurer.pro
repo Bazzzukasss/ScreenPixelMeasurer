@@ -12,17 +12,17 @@ SOURCES += \
     src/calculator.cpp \
     src/items.cpp \
     src/scene.cpp \
-    src/MainWindow.cpp \
     src/main.cpp \
-    src/view.cpp
+    src/view.cpp \
+    src/window.cpp
 
 HEADERS += \
     src/calculator.h \
     src/data.h \
     src/items.h \
     src/scene.h \
-    src/MainWindow.h \
-    src/view.h
+    src/view.h \
+    src/window.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

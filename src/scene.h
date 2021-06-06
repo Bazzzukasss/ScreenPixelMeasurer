@@ -15,7 +15,7 @@ public:
 
     void setRenderData(const RenderData& renderData);
     void setPalette(const Palette& palette);
-    bool startDragging();
+    void startDragging();
     bool isDragableItemSelected(const QPoint& pos) const;
 
 signals:

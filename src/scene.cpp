@@ -60,7 +60,7 @@ void Scene::setPalette(const Palette& palette)
     }
 }
 
-bool Scene::startDragging()
+void Scene::startDragging()
 {
     m_originalFixedRectangle = m_currentFixedRectangle;
 }

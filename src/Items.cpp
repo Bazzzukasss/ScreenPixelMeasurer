@@ -75,7 +75,7 @@ void MeasureGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
     m_anchorPoint = mapToScene(event->pos());
 }
 
-void MeasureGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+void MeasureGraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent*)
 {
     setPos(0, 0);
 }
