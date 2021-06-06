@@ -4,8 +4,10 @@ Calculator::Calculator()
 {
 }
 
-QRect Calculator::calculateCursorRectangle(int x, int y, const QImage& img)
+QRect Calculator::calculateCursorRectangle(const QPoint& pos, const QImage& img)
 {
+    auto x = pos.x();
+    auto y = pos.y();
     auto color = img.pixel(x, y);
     auto cr = Calculator::beamTo(x, img.width() - 1, y, 1, Qt::Horizontal, color, img);
     auto cl = Calculator::beamTo(x, 0, y, -1, Qt::Horizontal, color, img);
@@ -15,9 +17,12 @@ QRect Calculator::calculateCursorRectangle(int x, int y, const QImage& img)
     return {cl, ct, cr - cl, cb - ct};
 }
 
-std::array<QLine, 2> Calculator::calculateCursorLines(const QRect& cursorRect, int x, int y)
+std::array<QLine, 2> Calculator::calculateCursorLines(const QPoint& pos, const QRect& cursorRect)
 {
     int l, r, t, b;
+    auto x = pos.x();
+    auto y = pos.y();
+
     cursorRect.getCoords(&l, &t, &r, &b);
 
     return {
@@ -26,9 +31,11 @@ std::array<QLine, 2> Calculator::calculateCursorLines(const QRect& cursorRect, i
     };
 }
 
-std::array<QLine, 4> Calculator::calculateFixedLines(const QRect& fixedRect, int w, int h)
+std::array<QLine, 4> Calculator::calculateFixedLines(const QRect& fixedRect, const QImage& img)
 {
     int l, t, b, r;
+    auto w = img.width();
+    auto h = img.height();
     fixedRect.getCoords(&l, &t, &r, &b);
 
     return {

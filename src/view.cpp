@@ -3,6 +3,7 @@
 
 #include "view.h"
 #include "scene.h"
+#include "calculator.h"
 
 View::View(QWidget* parent)
     : QGraphicsView(parent)
@@ -128,25 +129,15 @@ void View::correctFixedRectangle(const QRect& rect)
 
 void View::calculate()
 {
-    int x, y, w, h, cr, cl, cb, ct;
-
     if (m_renderData.isCursorRectPresent)
     {
-        x = m_renderData.cursorPoint.x();
-        y = m_renderData.cursorPoint.y();
-        w = m_renderData.screenImage.width();
-        h = m_renderData.screenImage.height();
-
-        auto color = m_renderData.screenImage.toImage().pixel(x, y);
-
-        cr = beamTo(x, w - 1, y, 1, Qt::Horizontal, color);
-        cl = beamTo(x, 0, y, -1, Qt::Horizontal, color);
-        cb = beamTo(y, h - 1, x, 1, Qt::Vertical, color);
-        ct = beamTo(y, 0, x, -1, Qt::Vertical, color);
-
-        m_renderData.cursorHLine = {cl, y, cr, y};
-        m_renderData.cursorVLine = {x, ct, x, cb};
-        m_renderData.cursorRectangle = {cl, ct, cr - cl, cb - ct};
+        m_renderData.cursorRectangle =
+                Calculator::calculateCursorRectangle(m_renderData.cursorPoint,
+                                                     m_renderData.screenImage.toImage());
+        auto lines = Calculator::calculateCursorLines(m_renderData.cursorPoint,
+                                                      m_renderData.cursorRectangle);
+        m_renderData.cursorHLine = lines[0];
+        m_renderData.cursorVLine = lines[1];
     }
     else
     {
@@ -158,85 +149,13 @@ void View::calculate()
 
     if (m_renderData.isFixedRectPresent && m_renderData.isCursorRectPresent)
     {
-        int fl, ft, fb, fr;
-        m_renderData.fixedRectangle.getCoords(&fl, &ft, &fr, &fb);
+        m_renderData.fixedLines = Calculator::calculateFixedLines(m_renderData.fixedRectangle,
+                                                                  m_renderData.screenImage.toImage());
+        auto lines = Calculator::calculateMeasureLines(m_renderData.cursorRectangle,
+                                                       m_renderData.fixedRectangle);
 
-        m_renderData.fixedLines[0] = {1, ft, w - 1, ft};
-        m_renderData.fixedLines[1] = {1, fb + 1, w - 1, fb + 1};
-        m_renderData.fixedLines[2] = {fl, 1, fl, h - 1};
-        m_renderData.fixedLines[3] = {fr + 1, 1, fr + 1, h - 1};
-
-        auto ccx = m_renderData.cursorRectangle.center().x();
-        auto ccy = m_renderData.cursorRectangle.center().y();
-        auto fcx = m_renderData.fixedRectangle.center().x();
-        auto fcy = m_renderData.fixedRectangle.center().y();
-        int hx1{1},hx2{1},hy1{1},hy2{1};
-        int vx1{1},vx2{1},vy1{1},vy2{1};
-
-        if (m_renderData.cursorRectangle == m_renderData.fixedRectangle)
-        {
-        }
-        else
-        {
-            if (m_renderData.cursorRectangle.contains(m_renderData.fixedRectangle))
-            {
-                hx2 = fl - 1;   hy2 = fcy;      hx1 = cl;   hy1 = fcy;
-                vx2 = fcx;      vy2= ft - 1;    vx1 = fcx;  vy1 = ct;
-            }
-            else if (m_renderData.fixedRectangle.contains(m_renderData.cursorRectangle))
-            {
-                hx2 = cl - 1;   hy2 = ccy;      hx1 =fl;    hy1 = ccy;
-                vx2 = ccx;      vy2 = ct - 1;   vx1 = ccx;  vy1 = ft;
-            }
-            else
-            {
-                vx1 = vx2 = ccx;
-                hy1 = hy2 = ccy;
-
-                if (cb < ft)
-                {
-                    vy1 = cb + 1; vy2 = ft - 1;
-                }
-                else if (ct > fb)
-                {
-                    vy1 = fb + 2; vy2 = ct - 1;
-                }
-                else
-                {
-                    if (ct < ft)
-                    {
-                        vy1 = ct; vy2 = ft - 1;
-                    }
-                    else if (ct > ft)
-                    {
-                         vy1 = ft; vy2 = ct - 1;
-                    }
-                }
-
-                if (cr < fl)
-                {
-                    hx1 = cr + 1; hx2 = fl - 1;
-                }
-                else if (cl > fr)
-                {
-                    hx1 = fr + 2; hx2 = cl - 1;
-                }
-                else
-                {
-                    if (cl < fl)
-                    {
-                        hx1 = cl;  hx2 = fl - 1;
-                    }
-                    else if (cl > fl)
-                    {
-                        hx1 = fl; hx2 = cl - 1;
-                    }
-                }
-            }
-        }
-
-        m_renderData.measureVLine = {vx1, vy1, vx2, vy2};
-        m_renderData.measureHLine = {hx1, hy1, hx2, hy2};
+        m_renderData.measureVLine = lines[0];
+        m_renderData.measureHLine = lines[1];
     }
     else
     {
