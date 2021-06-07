@@ -19,6 +19,7 @@ Window::Window(QWidget* parent) :
     setAttribute(Qt::WA_NoSystemBackground);
     setAttribute(Qt::WA_TranslucentBackground);
     setMouseTracking(true);
+    setWindowTitle("LMB - add/remove fixed rectangle; Mouse Wheel - zooming; RMB - panning");
 #ifdef Q_OS_WIN
     setWindowOpacity(0.1);
 #endif
