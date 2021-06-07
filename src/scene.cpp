@@ -86,7 +86,6 @@ void Scene::initialize()
 
     m_cursorHLineItem = addMeasureGraphicsItem<MeasureSimpleLineItem>();
     m_cursorVLineItem = addMeasureGraphicsItem<MeasureSimpleLineItem>();
-    m_cursorRectangleItem = addMeasureGraphicsItem<MeasureRectItem>();
 
     m_measureHLineItem = addMeasureGraphicsItem<MeasureLineItem>();
     m_measureHLineItem->setPenStyle(Qt::PenStyle::DotLine);
@@ -150,6 +149,7 @@ void Scene::initialize()
     });
 
     m_fixedRectangleItem = addMeasureGraphicsItem<MeasureRectItem>();
+    m_cursorRectangleItem = addMeasureGraphicsItem<MeasureRectItem>();
 
     hideAll();
     setSceneRect(itemsBoundingRect());
