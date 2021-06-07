@@ -28,6 +28,7 @@ struct RenderData{
     bool isMeasurerRectPresent{false};
     bool isCursorRectPresent{false};
     bool isFixedRectPresent{false};
+    bool isItemDragging{false};
 };
 
 #endif // DATA_H

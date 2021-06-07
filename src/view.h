@@ -53,7 +53,6 @@ private:
     QVector<Palette> m_palettes{kDarkPalette, kLightPalette};
     int m_scale{kMinScale};
     int m_paletteIndex{0};
-    bool m_isItemDragging;
 
 private:
     void updateScene();

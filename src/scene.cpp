@@ -67,13 +67,16 @@ void Scene::startDragging()
 
 bool Scene::isMovableItemSelected(const QPoint& pos) const
 {
-    for (auto item : items(pos))
+    QPointF fpos {pos.x() + 0.5, pos.y() + 0.5};
+
+    for (auto item : items(fpos))
     {
         if (item->flags() & QGraphicsItem::ItemIsMovable)
         {
             return true;
         }
     }
+
     return false;
 }
 
@@ -163,11 +166,12 @@ void Scene::hideAll()
 void Scene::setVisibility(const RenderData& renderData)
 {
     m_screenImageItem->setVisible(true);
-    m_cursorHLineItem->setItemsVisible(renderData.isCursorRectPresent);
-    m_cursorVLineItem->setItemsVisible(renderData.isCursorRectPresent);
-    m_cursorRectangleItem->setItemsVisible(renderData.isCursorRectPresent);
-    m_measureHLineItem->setItemsVisible(renderData.isFixedRectPresent);
-    m_measureVLineItem->setItemsVisible(renderData.isFixedRectPresent);
+    m_cursorHLineItem->setItemsVisible(!renderData.isItemDragging && renderData.isCursorRectPresent);
+    m_cursorVLineItem->setItemsVisible(!renderData.isItemDragging && renderData.isCursorRectPresent);
+    m_cursorRectangleItem->setItemsVisible(!renderData.isItemDragging && renderData.isCursorRectPresent);
+    m_measureHLineItem->setItemsVisible(!renderData.isItemDragging && renderData.isFixedRectPresent);
+    m_measureVLineItem->setItemsVisible(!renderData.isItemDragging && renderData.isFixedRectPresent);
+
     m_fixedRectangleItem->setItemsVisible(renderData.isFixedRectPresent);
 
     for (auto& fixedLineItem : m_fixedLinesItem)

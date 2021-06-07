@@ -23,6 +23,7 @@ public:
     void setFontSize(const float size);
     void setColor(const QColor& color);
     void setBgColor(const QColor& color);
+    bool isHovered() const;
 
 signals:
     void positionChanged(const QPointF& pos);
@@ -41,12 +42,15 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
 protected:
     QPen m_pen;
     QFont m_font;
     QColor m_bgColor;
     QPointF m_anchorPoint;
+    bool m_isHovered{false};
 };
 
 class MeasureLineItem : public MeasureGraphicsItem
@@ -82,6 +86,9 @@ class MeasureSimpleLineItem : public MeasureLineItem
 {
 public:
     MeasureSimpleLineItem(QGraphicsItem* parent = nullptr);
+
+protected:
+    const float boundingGap{2};
 };
 
 class MeasureSimpleHorLineItem : public MeasureSimpleLineItem

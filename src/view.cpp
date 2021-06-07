@@ -22,35 +22,38 @@ View::View(QWidget* parent)
 
 void View::mousePressEvent(QMouseEvent* event)
 {
-    m_isItemDragging = m_scene->isMovableItemSelected(mapToScene(event->pos()).toPoint());
-    if (!m_isItemDragging)
+    m_renderData.isItemDragging =
+            m_scene->isMovableItemSelected(mapToScene(event->pos()).toPoint());
+
+    if (!m_renderData.isItemDragging)
     {
         m_lastMousePos = event->pos();
 
         if (event->button() == Qt::LeftButton)
         {
             setFixedRectangle();
-        }
-        updateScene();
+        }        
     }
     else
     {
         m_scene->startDragging();
     }
+    updateScene();
 
     QGraphicsView::mousePressEvent(event);
 }
 
 void View::mouseReleaseEvent(QMouseEvent* event)
 {
-    m_isItemDragging = false;
+    m_renderData.isItemDragging = false;
+    updateScene();
 
     QGraphicsView::mouseReleaseEvent(event);
 }
 
 void View::mouseMoveEvent(QMouseEvent* event)
 {
-    if (!m_isItemDragging)
+    if (!m_renderData.isItemDragging)
     {
         m_renderData.cursorPoint = mapToScene(event->x(), event->y()).toPoint();
         m_renderData.isCursorRectPresent = true;

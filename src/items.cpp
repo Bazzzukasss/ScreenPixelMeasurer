@@ -96,6 +96,23 @@ void MeasureGraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     }
 }
 
+void MeasureGraphicsItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+    m_isHovered = true;
+    QGraphicsItemGroup::hoverEnterEvent(event);
+}
+
+void MeasureGraphicsItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+    m_isHovered = false;
+    QGraphicsItemGroup::hoverLeaveEvent(event);
+}
+
+bool MeasureGraphicsItem::isHovered() const
+{
+    return m_isHovered;
+}
+
 MeasureLineItem::MeasureLineItem(QGraphicsItem* parent)
     : MeasureLineItem(true, true, parent)
 {
@@ -354,7 +371,7 @@ void MeasureSimpleHorLineItem::changePosition(const QPointF& pos)
 
 QRectF MeasureSimpleHorLineItem::boundingRect() const
 {
-    return m_line->boundingRect().adjusted(0, -1, 0, 1);
+    return m_line->boundingRect().adjusted(0, -boundingGap, 0, boundingGap);
 }
 
 MeasureSimpleVertLineItem::MeasureSimpleVertLineItem(QGraphicsItem *parent)
@@ -371,5 +388,5 @@ void MeasureSimpleVertLineItem::changePosition(const QPointF& pos)
 
 QRectF MeasureSimpleVertLineItem::boundingRect() const
 {
-    return m_line->boundingRect().adjusted(-1, 0, 1, 0);
+    return m_line->boundingRect().adjusted(-boundingGap, 0, boundingGap, 0);
 }
