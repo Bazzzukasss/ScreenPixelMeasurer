@@ -1,5 +1,5 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef WINDOW_H
+#define WINDOW_H
 
 #include <QMainWindow>
 #include "view.h"
@@ -24,4 +24,4 @@ private:
     void grabScreen();
 };
 
-#endif // MAINWINDOW_H
+#endif // WINDOW_H

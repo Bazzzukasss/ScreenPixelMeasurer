@@ -1,5 +1,5 @@
-#ifndef MEASURELINEITEM_H
-#define MEASURELINEITEM_H
+#ifndef ITEMS_H
+#define ITEMS_H
 
 #include <QGraphicsItemGroup>
 #include <QPen>
@@ -90,7 +90,7 @@ public:
     MeasureSimpleHorLineItem(QGraphicsItem* parent = nullptr);
 
 protected:
-    void changePosition(const QPointF& pos);
+    void changePosition(const QPointF& pos) override;
     QRectF boundingRect() const override;
 };
 
@@ -100,7 +100,7 @@ public:
     MeasureSimpleVertLineItem(QGraphicsItem* parent = nullptr);
 
 protected:
-    void changePosition(const QPointF& pos);
+    void changePosition(const QPointF& pos) override;
     QRectF boundingRect() const override;
 };
 
@@ -130,4 +130,4 @@ private:
     void updateText();
 };
 
-#endif // MEASURELINEITEM_H
+#endif // ITEMS_H

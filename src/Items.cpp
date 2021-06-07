@@ -141,6 +141,7 @@ void MeasureLineItem::setItemsVisible(bool isVisible)
 {
     setVisible(isVisible);
     m_line->setVisible(isVisible);
+
     if (m_isTicksPresent)
     {
         for (auto& tick : m_ticks)
@@ -248,7 +249,8 @@ void MeasureLineItem::updateText()
     if (m_isTextPresent)
     {
         auto line = m_line->line();
-        setTextValue(m_text, line.length() + 1, {line.center().x(), line.center().y()}, line.dy() != 0);
+        setTextValue(m_text, line.length() + 1,
+                     {line.center().x(), line.center().y()}, line.dy() != 0);
     }
 }
 
