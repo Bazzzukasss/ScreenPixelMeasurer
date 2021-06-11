@@ -35,28 +35,45 @@ void Scene::setRenderData(const RenderData& renderData)
 
     m_currentFixedRectangle = renderData.fixedRectangle;
 
+    m_measureHTextItem->setData(toFloat(renderData.measureHLine));
+    m_measureVTextItem->setData(toFloat(renderData.measureVLine));
+    m_cursorRectHTextItem->setData(toFloat(renderData.cursorRectangle), false);
+    m_cursorRectVTextItem->setData(toFloat(renderData.cursorRectangle), true);
+    m_fixedRectHTextItem->setData(toFloat(renderData.fixedRectangle), false);
+    m_fixedRectVTextItem->setData(toFloat(renderData.fixedRectangle), true);
+
     setSceneRect(itemsBoundingRect());
 }
 
 void Scene::setPalette(const Palette& palette)
 {
-    m_cursorHLineItem->setColor(palette.cursorLines);
-    m_cursorVLineItem->setColor(palette.cursorLines);
+    m_cursorHLineItem->setPenColor(palette.cursorLines);
+    m_cursorVLineItem->setPenColor(palette.cursorLines);
 
-    m_measureHLineItem->setColor(palette.measurerLines);
-    m_measureVLineItem->setColor(palette.measurerLines);
+    m_measureHLineItem->setPenColor(palette.measurerLines);
+    m_measureVLineItem->setPenColor(palette.measurerLines);
 
-    m_cursorRectangleItem->setColor(palette.cursorRectangle);
-    m_fixedRectangleItem->setColor(palette.fixedRectangle);
+    m_cursorRectangleItem->setPenColor(palette.cursorRectangle);
+    m_fixedRectangleItem->setPenColor(palette.fixedRectangle);
 
     for (auto& fixedLineItem : m_fixedLinesItem)
     {
-        fixedLineItem->setColor(palette.fixedLines);
+        fixedLineItem->setPenColor(palette.fixedLines);
     }
 
-    for (auto item : m_items)
+    m_measureHTextItem->setDefaultTextColor(palette.measurerLines);
+    m_measureVTextItem->setDefaultTextColor(palette.measurerLines);
+    m_cursorRectHTextItem->setDefaultTextColor(palette.cursorRectangle);
+    m_cursorRectVTextItem->setDefaultTextColor(palette.cursorRectangle);
+    m_fixedRectHTextItem->setDefaultTextColor(palette.fixedRectangle);
+    m_fixedRectVTextItem->setDefaultTextColor(palette.fixedRectangle);
+
+    for (auto item : items())
     {
-        item->setBgColor(palette.background);
+        if (auto it = dynamic_cast<GraphicsTextItem*>(item))
+        {
+            it->setBgColor(palette.background);
+        }
     }
 }
 
@@ -84,13 +101,12 @@ void Scene::initialize()
 {
     m_screenImageItem = addPixmap({});
 
-    m_cursorHLineItem = addMeasureGraphicsItem<MeasureSimpleLineItem>();
-    m_cursorVLineItem = addMeasureGraphicsItem<MeasureSimpleLineItem>();
+    m_cursorHLineItem = addGraphicsItem<GraphicsLineItem>();
+    m_cursorVLineItem = addGraphicsItem<GraphicsLineItem>();
+    m_measureHLineItem = addGraphicsItem<GraphicsLineItem>();
+    m_measureVLineItem = addGraphicsItem<GraphicsLineItem>();
 
-    m_measureHLineItem = addMeasureGraphicsItem<MeasureLineItem>();
     m_measureHLineItem->setPenStyle(Qt::PenStyle::DotLine);
-
-    m_measureVLineItem = addMeasureGraphicsItem<MeasureLineItem>();
     m_measureVLineItem->setPenStyle(Qt::PenStyle::DotLine);
 
     int i{0};
@@ -98,21 +114,31 @@ void Scene::initialize()
     {
         if (i < 2)
         {
-            fixedLineItem = addMeasureGraphicsItem<MeasureSimpleHorLineItem>();
+            fixedLineItem = addGraphicsItem<GraphicsHorLineItemExt>();
         }
         else
         {
-            fixedLineItem = addMeasureGraphicsItem<MeasureSimpleVertLineItem>();
+            fixedLineItem = addGraphicsItem<GraphicsVertLineItemExt>();
         }
 
         fixedLineItem->setPenStyle(Qt::PenStyle::DashLine);
-        fixedLineItem->setItemsAcceptHoverEvents(true);
-        fixedLineItem->setItemsFlags(QGraphicsItem::ItemIsMovable |
-                                     QGraphicsItem::ItemIsSelectable);
+        fixedLineItem->setAcceptHoverEvents(true);
+        fixedLineItem->setFlags(QGraphicsItem::ItemIsMovable |
+                                QGraphicsItem::ItemSendsGeometryChanges);
         i++;
     }
 
-    connect(m_fixedLinesItem[0], &MeasureGraphicsItem::positionChanged,
+    m_cursorRectangleItem = addGraphicsItem<GraphicsRectItem>();
+    m_fixedRectangleItem  = addGraphicsItem<GraphicsRectItem>();
+
+    m_measureHTextItem = addGraphicsItem<GraphicsTextItem>();
+    m_measureVTextItem = addGraphicsItem<GraphicsTextItem>();
+    m_cursorRectHTextItem = addGraphicsItem<GraphicsTextItem>();
+    m_cursorRectVTextItem = addGraphicsItem<GraphicsTextItem>();
+    m_fixedRectHTextItem = addGraphicsItem<GraphicsTextItem>();
+    m_fixedRectVTextItem = addGraphicsItem<GraphicsTextItem>();
+
+    connect(m_fixedLinesItem[0], &GraphicsLineItem::positionChanged,
             this, [&](const QPointF& point){
         auto rect = m_originalFixedRectangle.adjusted(0, point.y(), 0, 0);
         if (isRectangleValid(rect))
@@ -121,7 +147,7 @@ void Scene::initialize()
         }
     });
 
-    connect(m_fixedLinesItem[1], &MeasureGraphicsItem::positionChanged,
+    connect(m_fixedLinesItem[1], &GraphicsLineItem::positionChanged,
             this, [&](const QPointF& point){
         auto rect = m_originalFixedRectangle.adjusted(0, 0, 0, point.y());
         if (isRectangleValid(rect))
@@ -130,7 +156,7 @@ void Scene::initialize()
         }
     });
 
-    connect(m_fixedLinesItem[2], &MeasureGraphicsItem::positionChanged,
+    connect(m_fixedLinesItem[2], &GraphicsLineItem::positionChanged,
             this, [&](const QPointF& point){
         auto rect = m_originalFixedRectangle.adjusted(point.x(), 0, 0, 0);
         if (isRectangleValid(rect))
@@ -139,7 +165,7 @@ void Scene::initialize()
         }
     });
 
-    connect(m_fixedLinesItem[3], &MeasureGraphicsItem::positionChanged,
+    connect(m_fixedLinesItem[3], &GraphicsLineItem::positionChanged,
             this, [&](const QPointF& point){
         auto rect = m_originalFixedRectangle.adjusted(0, 0, point.x(), 0);
         if (isRectangleValid(rect))
@@ -148,46 +174,66 @@ void Scene::initialize()
         }
     });
 
-    m_fixedRectangleItem = addMeasureGraphicsItem<MeasureRectItem>();
-    m_cursorRectangleItem = addMeasureGraphicsItem<MeasureRectItem>();
-
     hideAll();
+    setOpacity(0.7);
+
     setSceneRect(itemsBoundingRect());
 }
 
 void Scene::hideAll()
 {
-    for (auto item : m_items)
+    for (auto item : items())
     {
-        item->setItemsVisible(false);
+        item->setVisible(false);
     }
+}
+
+void Scene::setOpacity(float opacity)
+{
+    for (auto item : items())
+    {
+        item->setOpacity(opacity);
+    }
+    m_screenImageItem->setOpacity(1.0);
 }
 
 void Scene::setVisibility(const RenderData& renderData)
 {
     m_screenImageItem->setVisible(true);
-    m_cursorHLineItem->setItemsVisible(!renderData.isItemDragging && renderData.isCursorRectPresent);
-    m_cursorVLineItem->setItemsVisible(!renderData.isItemDragging && renderData.isCursorRectPresent);
-    m_cursorRectangleItem->setItemsVisible(!renderData.isItemDragging && renderData.isCursorRectPresent);
-    m_measureHLineItem->setItemsVisible(!renderData.isItemDragging && renderData.isFixedRectPresent);
-    m_measureVLineItem->setItemsVisible(!renderData.isItemDragging && renderData.isFixedRectPresent);
+    m_cursorRectangleItem->setVisible(!renderData.isItemDragging &&
+                                      renderData.isCursorRectPresent);
 
-    m_fixedRectangleItem->setItemsVisible(renderData.isFixedRectPresent);
+    m_cursorHLineItem->setVisible(m_cursorRectangleItem->isVisible());
+    m_cursorVLineItem->setVisible(m_cursorRectangleItem->isVisible());
+
+    m_measureHLineItem->setVisible(!renderData.isItemDragging &&
+                                   renderData.isFixedRectPresent &&
+                                   renderData.measureHLine.dx() > 0);
+    m_measureVLineItem->setVisible(!renderData.isItemDragging &&
+                                   renderData.isFixedRectPresent &&
+                                   renderData.measureVLine.dy() > 0);
+
+    m_fixedRectangleItem->setVisible(renderData.isFixedRectPresent);
+
+    m_measureHTextItem->setVisible(m_measureHLineItem->isVisible());
+    m_measureVTextItem->setVisible(m_measureVLineItem->isVisible());
+    m_cursorRectHTextItem->setVisible(m_cursorRectangleItem->isVisible());
+    m_cursorRectVTextItem->setVisible(m_cursorRectangleItem->isVisible());
+    m_fixedRectHTextItem->setVisible(m_fixedRectangleItem->isVisible());
+    m_fixedRectVTextItem->setVisible(m_fixedRectangleItem->isVisible());
+
 
     for (auto& fixedLineItem : m_fixedLinesItem)
     {
-        fixedLineItem->setItemsVisible(renderData.isFixedRectPresent);
+        fixedLineItem->setVisible(renderData.isFixedRectPresent);
     }
 }
 
 template<typename T>
-T* Scene::addMeasureGraphicsItem()
+T* Scene::addGraphicsItem()
 {
     auto item = new T();
-
     addItem(item);
-    m_items.push_back(item);
-    item->initialize();
 
     return item;
 }

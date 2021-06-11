@@ -79,7 +79,7 @@ std::array<QLine, 2> Calculator::calculateMeasureLines(const QRect& cursorRect, 
 
             if (cb < ft)
             {
-                vy1 = cb + 1; vy2 = ft - 1;
+                vy1 = cb + 2; vy2 = ft - 1;
             }
             else if (ct > fb)
             {
@@ -99,7 +99,7 @@ std::array<QLine, 2> Calculator::calculateMeasureLines(const QRect& cursorRect, 
 
             if (cr < fl)
             {
-                hx1 = cr + 1; hx2 = fl - 1;
+                hx1 = cr + 2; hx2 = fl - 1;
             }
             else if (cl > fr)
             {

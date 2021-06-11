@@ -23,14 +23,20 @@ signals:
 
 private:
     QGraphicsPixmapItem* m_screenImageItem;
-    MeasureSimpleLineItem* m_cursorHLineItem;
-    MeasureSimpleLineItem* m_cursorVLineItem;
-    MeasureLineItem* m_measureHLineItem;
-    MeasureLineItem* m_measureVLineItem;
-    MeasureRectItem* m_cursorRectangleItem;
-    MeasureRectItem* m_fixedRectangleItem;
-    std::array<MeasureSimpleLineItem*, 4> m_fixedLinesItem;
-    QVector<MeasureGraphicsItem*> m_items;
+    GraphicsLineItem* m_cursorHLineItem;
+    GraphicsLineItem* m_cursorVLineItem;
+    GraphicsLineItem* m_measureHLineItem;
+    GraphicsLineItem* m_measureVLineItem;
+    GraphicsRectItem* m_cursorRectangleItem;
+    GraphicsRectItem* m_fixedRectangleItem;
+    std::array<GraphicsLineItem*, 4> m_fixedLinesItem;
+    GraphicsTextItem* m_measureHTextItem;
+    GraphicsTextItem* m_measureVTextItem;
+    GraphicsTextItem* m_cursorRectHTextItem;
+    GraphicsTextItem* m_cursorRectVTextItem;
+    GraphicsTextItem* m_fixedRectHTextItem;
+    GraphicsTextItem* m_fixedRectVTextItem;
+
     QRect m_originalFixedRectangle;
     QRect m_currentFixedRectangle;
     bool m_isDragging{false};
@@ -38,9 +44,11 @@ private:
 private:
     void initialize();
     void hideAll();
+    void setOpacity(float opacity);
     void setVisibility(const RenderData& renderData);
+
     template<typename T>
-    T* addMeasureGraphicsItem();
+    T* addGraphicsItem();
 
     QRectF toFloat(const QRect& rectangle);
     QLineF toFloat(const QLine& line);
