@@ -221,6 +221,10 @@ void View::switchPalette()
 void View::shiftScene(int dx, int dy)
 {
     m_renderData.fixedRectangle.translate(dx, dy);
+    auto targetScenePos = mapToScene(QPoint(viewport()->width() / 2.0,
+                                            viewport()->height() / 2.0));
+
+    centerOn(targetScenePos);
     updateScene();
 }
 
