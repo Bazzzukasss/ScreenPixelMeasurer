@@ -31,6 +31,11 @@ GraphicsHorLineItemExt::GraphicsHorLineItemExt(QGraphicsItem* parent)
     setCursor(Qt::SizeVerCursor);
 }
 
+QRectF GraphicsHorLineItemExt::boundingRect() const
+{
+    return GraphicsLineItem::boundingRect().adjusted(0, -kBoundingGap, 0, kBoundingGap);
+}
+
 QVariant GraphicsHorLineItemExt::itemChange(QGraphicsItem::GraphicsItemChange change,
                                             const QVariant& value)
 {
@@ -48,6 +53,11 @@ GraphicsVertLineItemExt::GraphicsVertLineItemExt(QGraphicsItem* parent)
     : GraphicsLineItem(parent)
 {
     setCursor(Qt::SizeHorCursor);
+}
+
+QRectF GraphicsVertLineItemExt::boundingRect() const
+{
+    return GraphicsLineItem::boundingRect().adjusted(-kBoundingGap, 0, kBoundingGap, 0);
 }
 
 QVariant GraphicsVertLineItemExt::itemChange(QGraphicsItem::GraphicsItemChange change,

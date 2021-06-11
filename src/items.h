@@ -17,6 +17,9 @@ public:
 
 signals:
     void positionChanged(const QPointF& pos);
+
+protected:
+    const float kBoundingGap{2.0};
 };
 
 class GraphicsHorLineItemExt : public GraphicsLineItem
@@ -25,6 +28,8 @@ class GraphicsHorLineItemExt : public GraphicsLineItem
 
 public:
     GraphicsHorLineItemExt(QGraphicsItem* parent = nullptr);
+
+    QRectF boundingRect() const override;
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
@@ -36,6 +41,8 @@ class GraphicsVertLineItemExt : public GraphicsLineItem
 
 public:
     GraphicsVertLineItemExt(QGraphicsItem* parent = nullptr);
+
+    QRectF boundingRect() const override;
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
