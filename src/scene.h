@@ -27,15 +27,9 @@ private:
     GraphicsLineItem* m_cursorVLineItem;
     GraphicsLineItem* m_measureHLineItem;
     GraphicsLineItem* m_measureVLineItem;
-    GraphicsRectItem* m_cursorRectangleItem;
-    GraphicsRectItem* m_fixedRectangleItem;
+    GraphicsMeasureRectItem* m_cursorRectangleItem;
+    GraphicsMeasureRectItem* m_fixedRectangleItem;
     std::array<GraphicsLineItem*, 4> m_fixedLinesItem;
-    GraphicsTextItem* m_measureHTextItem;
-    GraphicsTextItem* m_measureVTextItem;
-    GraphicsTextItem* m_cursorRectHTextItem;
-    GraphicsTextItem* m_cursorRectVTextItem;
-    GraphicsTextItem* m_fixedRectHTextItem;
-    GraphicsTextItem* m_fixedRectVTextItem;
 
     QRect m_originalFixedRectangle;
     QRect m_currentFixedRectangle;
