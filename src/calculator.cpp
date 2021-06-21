@@ -26,8 +26,8 @@ std::array<QLine, 2> Calculator::calculateCursorLines(const QPoint& pos, const Q
     cursorRect.getCoords(&l, &t, &r, &b);
 
     return {
-        QLine{x, t, x, b},
-        QLine{l, y, r, y}
+        QLine{l, y, r + 1, y},
+        QLine{x, t, x, b + 1}
     };
 }
 

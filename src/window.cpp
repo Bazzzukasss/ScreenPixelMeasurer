@@ -1,12 +1,12 @@
 #include <QDesktopWidget>
 #include <QScreen>
 #include <QApplication>
-#include <QKeyEvent>
 #include <QShortcut>
 #include <QVBoxLayout>
 #include <QTimer>
 
 #include "window.h"
+#include "view.h"
 
 Window::Window(QWidget* parent) :
     QMainWindow(parent)
@@ -81,6 +81,10 @@ void Window::grabScreen()
 {
     auto screen = QGuiApplication::primaryScreen();
     auto descktop = QApplication::desktop();
-    m_view->setPixmap(screen->grabWindow(descktop->winId()).copy(geometry().adjusted(1, 1, -1, -1)));
+    auto winId = descktop->winId();
+
+    m_view->setPixmap(
+                screen->grabWindow(winId).copy(
+                    geometry().adjusted(1, 1, -1, -1)));
 }
 

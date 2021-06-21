@@ -23,7 +23,8 @@ View::View(QWidget* parent)
 void View::mousePressEvent(QMouseEvent* event)
 {
     m_renderData.isItemDragging =
-            m_scene->isMovableItemSelected(mapToScene(event->pos()).toPoint());
+            m_scene->isDragableItemSelected(
+                mapToScene(event->pos()).toPoint());
 
     if (!m_renderData.isItemDragging)
     {
@@ -144,10 +145,10 @@ void View::calculate()
     }
     else
     {
-        m_renderData.cursorPoint = {1,1};
-        m_renderData.cursorHLine = {1,1,1,1};
-        m_renderData.cursorVLine = {1,1,1,1};
-        m_renderData.cursorRectangle = {1,1,1,1};
+        m_renderData.cursorPoint = kPoint;
+        m_renderData.cursorHLine = {kPoint, kPoint};
+        m_renderData.cursorVLine = {kPoint, kPoint};
+        m_renderData.cursorRectangle = {kPoint, kPoint};
     }
 
     if (m_renderData.isFixedRectPresent && m_renderData.isCursorRectPresent)
@@ -162,13 +163,13 @@ void View::calculate()
     }
     else
     {
-        m_renderData.fixedRectangle = {1,1,1,1};
-        m_renderData.fixedLines[0] = {1,1,1,1};
-        m_renderData.fixedLines[1] = {1,1,1,1};
-        m_renderData.fixedLines[2] = {1,1,1,1};
-        m_renderData.fixedLines[3] = {1,1,1,1};
-        m_renderData.measureVLine = {1,1,1,1};
-        m_renderData.measureHLine = {1,1,1,1};
+        m_renderData.fixedRectangle = {kPoint, kPoint};
+        m_renderData.fixedLines[0] = {kPoint, kPoint};
+        m_renderData.fixedLines[1] = {kPoint, kPoint};
+        m_renderData.fixedLines[2] = {kPoint, kPoint};
+        m_renderData.fixedLines[3] = {kPoint, kPoint};
+        m_renderData.measureVLine = {kPoint, kPoint};
+        m_renderData.measureHLine = {kPoint, kPoint};
     }
 }
 

@@ -12,9 +12,11 @@ public:
     virtual void setPenStyle(Qt::PenStyle){};
     virtual void setPenColor(const QColor&){};
     virtual void setBgColor(const QColor& color){ m_bgColor = color; };
+    bool isHovered() const { return m_isHovered; };
 
 protected:
     QColor m_bgColor;
+    bool m_isHovered{false};
 };
 
 class GraphicsTextItem : public IGraphicsItem, public QGraphicsTextItem
@@ -28,7 +30,7 @@ class GraphicsTextItem : public IGraphicsItem, public QGraphicsTextItem
 public:
     GraphicsTextItem(QGraphicsItem* parent = nullptr);
 
-    void setText(const QString &value, const QPointF& point, TextPosCorrection posCorrection);
+    void setText(const QString& value, const QPointF& point, TextPosCorrection posCorrection);
     void setData(const QLineF& line);
     void setData(const QRectF& rect, bool isHeightValue);
     void setPenColor(const QColor& color) override;
@@ -58,7 +60,11 @@ signals:
     void positionChanged(const QPointF& pos);
 
 protected:
-    const float kBoundingGap{2.0};
+    const float kBoundingGap{5.0};
+
+protected:
+    void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 };
 
 class GraphicsMeasureLineItem : public GraphicsLineItem
@@ -78,7 +84,7 @@ protected:
     GraphicsTextItem* m_label;
 
 protected:
-    QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+    QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 };
 
 class GraphicsFixedHorLineItem : public GraphicsLineItem
@@ -89,9 +95,10 @@ public:
     GraphicsFixedHorLineItem(QGraphicsItem* parent = nullptr);
 
     QRectF boundingRect() const override;
+    QPainterPath shape() const override;
 
 protected:
-    QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+    QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 };
 
 class GraphicsFixedVertLineItem : public GraphicsLineItem
@@ -102,9 +109,10 @@ public:
     GraphicsFixedVertLineItem(QGraphicsItem* parent = nullptr);
 
     QRectF boundingRect() const override;
+    QPainterPath shape() const override;
 
 protected:
-    QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+    QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 };
 
 class GraphicsMeasureRectItem : public IGraphicsItem, public QGraphicsRectItem
@@ -121,7 +129,7 @@ protected:
     std::vector<GraphicsTextItem*> m_labels;
 
 protected:
-    QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+    QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 };
 
 #endif // ITEMS_H

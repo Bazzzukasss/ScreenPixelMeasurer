@@ -6,13 +6,11 @@
 
 struct Palette {
     QColor background;
-    QColor border;
     QColor fixedRectangle;
     QColor fixedLines;
     QColor cursorRectangle;
     QColor cursorLines;
-    QColor measurerLines;
-    float fontPointSize;
+    QColor measureLines;
 };
 
 struct RenderData{

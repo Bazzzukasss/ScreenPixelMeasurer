@@ -28,7 +28,7 @@ void Scene::setRenderData(const RenderData& renderData)
     m_measureVLineItem->setData(toFloat(renderData.measureVLine));
 
     int i{0};
-    for (auto& fixedLineItem : m_fixedLinesItem)
+    for (auto fixedLineItem : m_fixedLinesItem)
     {
         fixedLineItem->setLine(toFloat(renderData.fixedLines[i++]));
     }
@@ -43,13 +43,13 @@ void Scene::setPalette(const Palette& palette)
     m_cursorHLineItem->setPenColor(palette.cursorLines);
     m_cursorVLineItem->setPenColor(palette.cursorLines);
 
-    m_measureHLineItem->setPenColor(palette.measurerLines);
-    m_measureVLineItem->setPenColor(palette.measurerLines);
+    m_measureHLineItem->setPenColor(palette.measureLines);
+    m_measureVLineItem->setPenColor(palette.measureLines);
 
     m_cursorRectangleItem->setPenColor(palette.cursorRectangle);
     m_fixedRectangleItem->setPenColor(palette.fixedRectangle);
 
-    for (auto& fixedLineItem : m_fixedLinesItem)
+    for (auto fixedLineItem : m_fixedLinesItem)
     {
         fixedLineItem->setPenColor(palette.fixedLines);
     }
@@ -68,7 +68,7 @@ void Scene::startDragging()
     m_originalFixedRectangle = m_currentFixedRectangle;
 }
 
-bool Scene::isMovableItemSelected(const QPoint& pos) const
+bool Scene::isDragableItemSelected(const QPoint& pos) const
 {
     QPointF fpos {pos.x() + 0.5, pos.y() + 0.5};
 
@@ -83,17 +83,28 @@ bool Scene::isMovableItemSelected(const QPoint& pos) const
     return false;
 }
 
+bool Scene::isDragableItemHovered(const QPoint &pos) const
+{
+    QPointF fpos {pos.x() + 0.5, pos.y() + 0.5};
+
+    for (auto item : items(fpos))
+    {
+        if (auto it = dynamic_cast<IGraphicsItem*>(item))
+        {
+            if (it->isHovered())
+                return true;
+        }
+    }
+
+    return false;
+}
+
 void Scene::initialize()
 {
     m_screenImageItem = addPixmap({});
 
     m_cursorHLineItem = addGraphicsItem<GraphicsLineItem>();
     m_cursorVLineItem = addGraphicsItem<GraphicsLineItem>();
-    m_measureHLineItem = addGraphicsItem<GraphicsMeasureLineItem>();
-    m_measureVLineItem = addGraphicsItem<GraphicsMeasureLineItem>();
-
-    m_measureHLineItem->setPenStyle(Qt::PenStyle::DotLine);
-    m_measureVLineItem->setPenStyle(Qt::PenStyle::DotLine);
 
     int i{0};
     for (auto& fixedLineItem : m_fixedLinesItem)
@@ -111,50 +122,25 @@ void Scene::initialize()
         fixedLineItem->setAcceptHoverEvents(true);
         fixedLineItem->setFlags(QGraphicsItem::ItemIsMovable |
                                 QGraphicsItem::ItemSendsGeometryChanges);
+
+        connect(fixedLineItem, &GraphicsLineItem::positionChanged,
+                this, [i, this](const QPointF& point){
+            onFixedLinesChanged(i, point);
+        });
+
         i++;
     }
 
     m_cursorRectangleItem = addGraphicsItem<GraphicsMeasureRectItem>();
     m_fixedRectangleItem  = addGraphicsItem<GraphicsMeasureRectItem>();
+    m_measureHLineItem = addGraphicsItem<GraphicsMeasureLineItem>();
+    m_measureVLineItem = addGraphicsItem<GraphicsMeasureLineItem>();
 
-    connect(m_fixedLinesItem[0], &GraphicsLineItem::positionChanged,
-            this, [&](const QPointF& point){
-        auto rect = m_originalFixedRectangle.adjusted(0, point.y(), 0, 0);
-        if (isRectangleValid(rect))
-        {
-            emit fixedRectanglChanged(rect);
-        }
-    });
-
-    connect(m_fixedLinesItem[1], &GraphicsLineItem::positionChanged,
-            this, [&](const QPointF& point){
-        auto rect = m_originalFixedRectangle.adjusted(0, 0, 0, point.y());
-        if (isRectangleValid(rect))
-        {
-            emit fixedRectanglChanged(rect);
-        }
-    });
-
-    connect(m_fixedLinesItem[2], &GraphicsLineItem::positionChanged,
-            this, [&](const QPointF& point){
-        auto rect = m_originalFixedRectangle.adjusted(point.x(), 0, 0, 0);
-        if (isRectangleValid(rect))
-        {
-            emit fixedRectanglChanged(rect);
-        }
-    });
-
-    connect(m_fixedLinesItem[3], &GraphicsLineItem::positionChanged,
-            this, [&](const QPointF& point){
-        auto rect = m_originalFixedRectangle.adjusted(0, 0, point.x(), 0);
-        if (isRectangleValid(rect))
-        {
-            emit fixedRectanglChanged(rect);
-        }
-    });
+    m_measureHLineItem->setPenStyle(Qt::PenStyle::DotLine);
+    m_measureVLineItem->setPenStyle(Qt::PenStyle::DotLine);
 
     hideAll();
-    setOpacity(0.7);
+    setOpacity(1);
 
     setSceneRect(itemsBoundingRect());
 }
@@ -183,25 +169,60 @@ void Scene::setOpacity(float opacity)
 
 void Scene::setVisibility(const RenderData& renderData)
 {
-    m_screenImageItem->setVisible(true);
-    m_cursorRectangleItem->setVisible(!renderData.isItemDragging &&
-                                      renderData.isCursorRectPresent);
+    auto isItemHovered = isDragableItemHovered(renderData.cursorPoint);
 
-    m_cursorHLineItem->setVisible(m_cursorRectangleItem->isVisible());
-    m_cursorVLineItem->setVisible(m_cursorRectangleItem->isVisible());
+    m_screenImageItem->setVisible(true);
+
+    m_cursorRectangleItem->setVisible(!renderData.isItemDragging &&
+                                      renderData.isCursorRectPresent &&
+                                      !isItemHovered);
+
+    m_cursorHLineItem->setVisible(m_cursorRectangleItem->isVisible() &&
+                                  renderData.cursorHLine.dx() > 0 &&
+                                  !isItemHovered);
+    m_cursorVLineItem->setVisible(m_cursorRectangleItem->isVisible() &&
+                                  renderData.cursorVLine.dy() > 0 &&
+                                  !isItemHovered);
 
     m_measureHLineItem->setVisible(!renderData.isItemDragging &&
                                    renderData.isFixedRectPresent &&
-                                   renderData.measureHLine.dx() > 0);
+                                   renderData.measureHLine.dx() > 0 &&
+                                   !isItemHovered);
     m_measureVLineItem->setVisible(!renderData.isItemDragging &&
                                    renderData.isFixedRectPresent &&
-                                   renderData.measureVLine.dy() > 0);
+                                   renderData.measureVLine.dy() > 0 &&
+                                   !isItemHovered);
 
     m_fixedRectangleItem->setVisible(renderData.isFixedRectPresent);
 
-    for (auto& fixedLineItem : m_fixedLinesItem)
+    for (auto fixedLineItem : m_fixedLinesItem)
     {
         fixedLineItem->setVisible(renderData.isFixedRectPresent);
+    }
+}
+
+void Scene::onFixedLinesChanged(int index, const QPointF& point)
+{
+    int x = point.x();
+    int y = point.y();
+
+    std::vector<std::array<int, 4>> margins{
+        {0, y, 0, 0},
+        {0, 0, 0, y},
+        {x, 0, 0, 0},
+        {0, 0, x, 0}
+    };
+
+    auto margin = margins[index];
+    auto rect = m_originalFixedRectangle.adjusted(
+                margin[0],
+                margin[1],
+                margin[2],
+                margin[3]);
+
+    if (isRectangleValid(rect))
+    {
+        emit fixedRectanglChanged(rect);
     }
 }
 

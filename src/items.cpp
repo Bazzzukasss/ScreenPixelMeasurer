@@ -3,8 +3,9 @@
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QGraphicsSceneMouseEvent>
+
 #include "items.h"
-#include <QDebug>
+
 GraphicsLineItem::GraphicsLineItem(QGraphicsItem* parent)
     : QGraphicsLineItem(parent)
 {
@@ -29,6 +30,20 @@ void GraphicsLineItem::setData(const QLineF& line)
     setLine(line);
 }
 
+void GraphicsLineItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
+{
+    m_isHovered = true;
+
+    QGraphicsLineItem::hoverEnterEvent(event);
+}
+
+void GraphicsLineItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+    m_isHovered = false;
+
+    QGraphicsLineItem::hoverLeaveEvent(event);
+}
+
 GraphicsMeasureLineItem::GraphicsMeasureLineItem(QGraphicsItem* parent)
     : GraphicsLineItem(parent)
 {
@@ -47,7 +62,7 @@ void GraphicsMeasureLineItem::setPenColor(const QColor& color)
 
     m_label->setPenColor(color);
 
-    for (auto& tick : m_ticks)
+    for (auto tick : m_ticks)
     {
         tick->setPen(p);
     }
@@ -100,7 +115,7 @@ QVariant GraphicsMeasureLineItem::itemChange(QGraphicsItem::GraphicsItemChange c
         }
     }
 
-    return QGraphicsItem::itemChange(change, value);
+    return QGraphicsLineItem::itemChange(change, value);
 }
 
 GraphicsFixedHorLineItem::GraphicsFixedHorLineItem(QGraphicsItem* parent)
@@ -111,7 +126,16 @@ GraphicsFixedHorLineItem::GraphicsFixedHorLineItem(QGraphicsItem* parent)
 
 QRectF GraphicsFixedHorLineItem::boundingRect() const
 {
-    return GraphicsLineItem::boundingRect().adjusted(0, -kBoundingGap, 0, kBoundingGap);
+    auto dp = QPointF{0, kBoundingGap};
+    return QRectF{line().p1() - dp,
+                  line().p2() + dp};
+}
+
+QPainterPath GraphicsFixedHorLineItem::shape() const
+{
+    QPainterPath path;
+    path.addRect(boundingRect());
+    return path;
 }
 
 QVariant GraphicsFixedHorLineItem::itemChange(QGraphicsItem::GraphicsItemChange change,
@@ -124,7 +148,7 @@ QVariant GraphicsFixedHorLineItem::itemChange(QGraphicsItem::GraphicsItemChange 
         return QPointF{0, 0};
     }
 
-    return QGraphicsItem::itemChange(change, value);
+    return QGraphicsLineItem::itemChange(change, value);
 }
 
 GraphicsFixedVertLineItem::GraphicsFixedVertLineItem(QGraphicsItem* parent)
@@ -135,7 +159,16 @@ GraphicsFixedVertLineItem::GraphicsFixedVertLineItem(QGraphicsItem* parent)
 
 QRectF GraphicsFixedVertLineItem::boundingRect() const
 {
-    return GraphicsLineItem::boundingRect().adjusted(-kBoundingGap, 0, kBoundingGap, 0);
+    auto dp = QPointF{kBoundingGap, 0};
+    return QRectF{line().p1() - dp,
+                  line().p2() + dp};
+}
+
+QPainterPath GraphicsFixedVertLineItem::shape() const
+{
+    QPainterPath path;
+    path.addRect(boundingRect());
+    return path;
 }
 
 QVariant GraphicsFixedVertLineItem::itemChange(QGraphicsItem::GraphicsItemChange change,
@@ -148,7 +181,7 @@ QVariant GraphicsFixedVertLineItem::itemChange(QGraphicsItem::GraphicsItemChange
         return QPointF{0, 0};
     }
 
-    return QGraphicsItem::itemChange(change, value);
+    return QGraphicsLineItem::itemChange(change, value);
 }
 
 GraphicsTextItem::GraphicsTextItem(QGraphicsItem* parent)
@@ -243,7 +276,7 @@ GraphicsMeasureRectItem::GraphicsMeasureRectItem(QGraphicsItem* parent)
     m_labels.push_back(new GraphicsTextItem(this));
     m_labels.push_back(new GraphicsTextItem(this));
 
-    for(auto label : m_labels)
+    for (auto label : m_labels)
     {
         label->setFlag(ItemIgnoresParentOpacity);
     }
@@ -251,6 +284,12 @@ GraphicsMeasureRectItem::GraphicsMeasureRectItem(QGraphicsItem* parent)
 
 void GraphicsMeasureRectItem::setData(const QRectF& rect)
 {
+    QPen p = pen();
+    p.setJoinStyle(rect.width() == 0 || rect.height() == 0
+                   ? Qt::PenJoinStyle::RoundJoin
+                   : Qt::PenJoinStyle::MiterJoin);
+    setPen(p);
+
     setRect(rect);
 
     m_labels[0]->setData(rect, true);
@@ -278,7 +317,7 @@ void GraphicsMeasureRectItem::setPenColor(const QColor& color)
 
 void GraphicsMeasureRectItem::setBgColor(const QColor& color)
 {
-    for (auto& label : m_labels)
+    for (auto label : m_labels)
     {
         label->setBgColor(color);
     }
@@ -290,11 +329,11 @@ QVariant GraphicsMeasureRectItem::itemChange(QGraphicsItem::GraphicsItemChange c
     if (change == ItemVisibleHasChanged && scene())
     {
         auto visible = value.toBool();
-        for (auto& label : m_labels)
+        for (auto label : m_labels)
         {
             label->setVisible(visible);
         }
     }
 
-    return QGraphicsItem::itemChange(change, value);
+    return QGraphicsRectItem::itemChange(change, value);
 }

@@ -16,7 +16,8 @@ public:
     void setRenderData(const RenderData& renderData);
     void setPalette(const Palette& palette);
     void startDragging();
-    bool isMovableItemSelected(const QPoint& pos) const;
+    bool isDragableItemSelected(const QPoint& pos) const;
+    bool isDragableItemHovered(const QPoint& pos) const;
 
 signals:
     void fixedRectanglChanged(const QRect& rect);
@@ -40,6 +41,7 @@ private:
     void hideAll();
     void setOpacity(float opacity);
     void setVisibility(const RenderData& renderData);
+    void onFixedLinesChanged(int index, const QPointF &point);
 
     template<typename T>
     T* addGraphicsItem();

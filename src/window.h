@@ -2,7 +2,8 @@
 #define WINDOW_H
 
 #include <QMainWindow>
-#include "view.h"
+
+class View;
 
 class Window : public QMainWindow
 {
