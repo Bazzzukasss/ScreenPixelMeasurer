@@ -60,7 +60,7 @@ signals:
     void positionChanged(const QPointF& pos);
 
 protected:
-    const float kBoundingGap{5.0};
+    const float kBoundingGap{1.5};
 
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
