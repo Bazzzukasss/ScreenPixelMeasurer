@@ -19,7 +19,7 @@ Window::Window(QWidget* parent) :
     setAttribute(Qt::WA_NoSystemBackground);
     setAttribute(Qt::WA_TranslucentBackground);
     setMouseTracking(true);
-    setWindowTitle("LMB - add/remove fixed rectangle; Mouse Wheel - zooming; RMB - panning; P - change palette");
+    setWindowTitle(kTitle);
 #ifdef Q_OS_WIN
     setWindowOpacity(0.1);
 #endif
@@ -31,6 +31,7 @@ void Window::initialize()
 {
     m_view = new View(this);
     m_view->hide();
+    connect(m_view, &View::renderDataChanged, this, &Window::updateTitle);
 
     auto layout = new QVBoxLayout();
     layout->addWidget(m_view);
@@ -40,8 +41,11 @@ void Window::initialize()
     centralWidget->setLayout(layout);
     setCentralWidget(centralWidget);
 
-    auto shortcut = new QShortcut(QKeySequence(Qt::Key_P), this);
-    connect(shortcut, &QShortcut::activated, m_view, &View::switchPalette);
+    auto paletteShortcut = new QShortcut(QKeySequence(Qt::Key_P), this);
+    connect(paletteShortcut, &QShortcut::activated, m_view, &View::switchPalette);
+
+    auto clearShortcut = new QShortcut(QKeySequence(Qt::Key_Space), this);
+    connect(clearShortcut, &QShortcut::activated, m_view, &View::clearFixedRect);
 
     QTimer::singleShot(0,[&](){
         grabScreen();
@@ -86,5 +90,14 @@ void Window::grabScreen()
     m_view->setPixmap(
                 screen->grabWindow(winId).copy(
                     geometry().adjusted(1, 1, -1, -1)));
+}
+
+void Window::updateTitle(const RenderData& renderData)
+{
+    auto info = renderData.cursorColor.isValid()
+            ? "; Color: " + renderData.cursorColor.name()
+            : "";
+
+    setWindowTitle(kTitle + info);
 }
 

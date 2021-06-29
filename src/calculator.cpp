@@ -4,17 +4,32 @@ Calculator::Calculator()
 {
 }
 
+QColor Calculator::calculateCursorColor(const QPoint& pos, const QImage& img)
+{
+    if (img.rect().contains(pos))
+    {
+        return img.pixel(pos);
+    }
+
+    return {};
+}
+
 QRect Calculator::calculateCursorRectangle(const QPoint& pos, const QImage& img)
 {
-    auto x = pos.x();
-    auto y = pos.y();
-    auto color = img.pixel(x, y);
-    auto cr = Calculator::beamTo(x, img.width() - 1, y, 1, Qt::Horizontal, color, img);
-    auto cl = Calculator::beamTo(x, 0, y, -1, Qt::Horizontal, color, img);
-    auto cb = Calculator::beamTo(y, img.height() - 1, x, 1, Qt::Vertical, color, img);
-    auto ct = Calculator::beamTo(y, 0, x, -1, Qt::Vertical, color, img);
+    if (img.rect().contains(pos))
+    {
+        auto x = pos.x();
+        auto y = pos.y();
+        auto color = img.pixel(pos);
+        auto cr = Calculator::beamTo(x, img.width() - 1, y, 1, Qt::Horizontal, color, img);
+        auto cl = Calculator::beamTo(x, 0, y, -1, Qt::Horizontal, color, img);
+        auto cb = Calculator::beamTo(y, img.height() - 1, x, 1, Qt::Vertical, color, img);
+        auto ct = Calculator::beamTo(y, 0, x, -1, Qt::Vertical, color, img);
 
-    return {cl, ct, cr - cl, cb - ct};
+        return {cl, ct, cr - cl, cb - ct};
+    }
+
+    return {};
 }
 
 std::array<QLine, 2> Calculator::calculateCursorLines(const QPoint& pos, const QRect& cursorRect)

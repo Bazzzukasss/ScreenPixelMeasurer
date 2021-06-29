@@ -15,6 +15,7 @@ struct Palette {
 
 struct RenderData{
     QPixmap screenImage;
+    QColor cursorColor;
     QPoint cursorPoint;
     QLine cursorHLine;
     QLine cursorVLine;

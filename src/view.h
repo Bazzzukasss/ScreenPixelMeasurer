@@ -36,6 +36,10 @@ public:
     void switchPalette();
     void shiftScene(int dx, int dy);
     void setPixmap(const QPixmap& pixmap);
+    void clearFixedRect();
+
+signals:
+    void renderDataChanged(const RenderData& renderData);
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;

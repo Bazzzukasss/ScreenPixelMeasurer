@@ -140,7 +140,7 @@ void Scene::initialize()
     m_measureVLineItem->setPenStyle(Qt::PenStyle::DotLine);
 
     hideAll();
-    setOpacity(1);
+    setOpacity(0.75);
 
     setSceneRect(itemsBoundingRect());
 }

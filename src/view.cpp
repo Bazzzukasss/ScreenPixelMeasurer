@@ -112,6 +112,8 @@ void View::updateScene()
     calculate();
     m_scene->setRenderData(m_renderData);
     update();
+
+    emit renderDataChanged(m_renderData);
 }
 
 void View::setFixedRectangle()
@@ -135,9 +137,14 @@ void View::calculate()
 {
     if (m_renderData.isCursorRectPresent)
     {
+        const auto& img = m_renderData.screenImage.toImage();
+
+        m_renderData.cursorColor =
+                Calculator::calculateCursorColor(m_renderData.cursorPoint, img);
+
         m_renderData.cursorRectangle =
-                Calculator::calculateCursorRectangle(m_renderData.cursorPoint,
-                                                     m_renderData.screenImage.toImage());
+                Calculator::calculateCursorRectangle(m_renderData.cursorPoint, img);
+
         auto lines = Calculator::calculateCursorLines(m_renderData.cursorPoint,
                                                       m_renderData.cursorRectangle);
         m_renderData.cursorHLine = lines[0];
@@ -232,5 +239,11 @@ void View::shiftScene(int dx, int dy)
 void View::setPixmap(const QPixmap& pixmap)
 {
     m_renderData.screenImage = pixmap;
+    updateScene();
+}
+
+void View::clearFixedRect()
+{
+    m_renderData.isFixedRectPresent = false;
     updateScene();
 }
